@@ -1,0 +1,6 @@
+row_id,timestamp,account,debit_minor,credit_minor,currency,entity_id,invoice_id,payment_id
+7,2026-08-03T10:00:00+05:00,AR,10000,0,KZT,c9,Kx,
+B7,2026-08-17T10:00:00+05:00,AR,10000,0,KZT,c9,5,
+a,2026-08-17T10:00:00+05:00,REVENUE,0,20000,KZT,c9,,
+0042,2026-08-20T09:30:00+05:00,CASH,10000,0,KZT,c9,,7
+b7,2026-08-20T09:30:00+05:00,AR,0,10000,KZT,c9,Kx,7

@@ -1,0 +1,2 @@
+{"doc_id": "q ", "payment_id": "Q", "timestamp": "2026-07-05T12:00:00+05:00", "currency": "KZT", "amount_minor": 1000, "invoice_refs": ["9"]}
+{"doc_id": "10", "payment_id": "0010", "timestamp": "2026-07-06T12:00:00+05:00", "currency": "KZT", "amount_minor": -500, "invoice_refs": null}

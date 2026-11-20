@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-mini",
+  "issues": [
+    {
+      "issue_id": "1",
+      "type": "duplicate_invoice",
+      "affected_ids": [
+        "7",
+        "kX"
+      ],
+      "expected_amount_minor": 10000,
+      "currency": "KZT",
+      "evidence_sets": [
+        [
+          "7",
+          "kX"
+        ]
+      ]
+    }
+  ]
+}

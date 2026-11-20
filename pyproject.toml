@@ -1,0 +1,12 @@
+[project]
+name = "cookedbooks"
+version = "0.1.0"
+description = "RL environment for AI financial auditors: generated books with known errors, five inspection tools, a deterministic grader."
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+# Runtime code is standard library only. Test tools (pytest, hypothesis) are pinned in requirements.lock.
+dependencies = []
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
