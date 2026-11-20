@@ -1,0 +1,20 @@
+# Keep the build context to what the image needs.
+.git
+.gitignore
+.venv
+.local
+.hypothesis
+.pytest_cache
+.mypy_cache
+.ruff_cache
+**/__pycache__
+**/*.py[cod]
+*.egg-info
+build
+dist
+reports
+grader_log.jsonl
+.DS_Store
+.idea
+.vscode
+.claude
