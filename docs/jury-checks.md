@@ -224,6 +224,6 @@ def score_episode(episode_dir: str, findings: dict, inspection_steps: int) -> di
 | C01–C20 | `tests/jury/test_block1_contract.py` |
 | D01–D20 | `tests/jury/test_block2_data.py` + `configs/matrix/D01.json … D20.json` |
 | 1–20, M01–M12 | `tests/jury/test_block3_reward.py` |
-| P01–P20 | `tests/jury/test_block4_pairs.py` + `auditgym/verify/transform.py` |
+| P01–P20 | `tests/jury/test_block4_pairs.py` + `cookedbooks/verify/transform.py` |
 
 Что мы из этого меняем в коде — в [PLAN.md](../PLAN.md).

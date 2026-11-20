@@ -10,27 +10,27 @@
 
 Сделано 20.11: SSH-ключ добавлен в GitLab, приватный проект создан, папка подключена.
 
-- Проект: https://gitlab.com/nazarakanov/auditgym
-- Адрес для git: `git@gitlab.com:nazarakanov/auditgym.git` (remote `origin`)
+- Проект: https://gitlab.com/nazarakanov/cookedbooks
+- Адрес для git: `git@gitlab.com:nazarakanov/cookedbooks.git` (remote `origin`)
 
 Осталось пригласить людей: **Manage → Members → Invite members**. Участникам команды — роль Maintainer, другу с GitHub — Reporter (этого хватает, чтобы забирать код).
 
 Для нового участника команды:
 
 ```bash
-git clone git@gitlab.com:nazarakanov/auditgym.git
+git clone git@gitlab.com:nazarakanov/cookedbooks.git
 ```
 
 ## Один раз: друг
 
-1. На GitHub: **New repository**, имя `auditgym`, **Private** (до сдачи), без README.
+1. На GitHub: **New repository**, имя `cookedbooks`, **Private** (до сдачи), без README.
 2. Заведи аккаунт на GitLab и добавь туда свой SSH-ключ (как в шагах 1–4 выше), чтобы читать приватный проект.
 3. Склонируй проект из GitLab и добавь GitHub вторым адресом:
    ```bash
-   git clone git@gitlab.com:nazarakanov/auditgym.git && cd auditgym
+   git clone git@gitlab.com:nazarakanov/cookedbooks.git && cd cookedbooks
    ```
    ```bash
-   git remote add github git@github.com:ЛОГИН_ДРУГА/auditgym.git
+   git remote add github git@github.com:ЛОГИН_ДРУГА/cookedbooks.git
    ```
    ```bash
    git push github main
@@ -41,7 +41,7 @@ git clone git@gitlab.com:nazarakanov/auditgym.git
 Каждый вечер и обязательно перед сдачей:
 
 ```bash
-cd auditgym && git pull origin main && git push github main
+cd cookedbooks && git pull origin main && git push github main
 ```
 
 ## Перед сдачей (22 ноября)

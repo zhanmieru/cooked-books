@@ -1,6 +1,6 @@
-# AuditGym: instructions for coding agents
+# CookedBooks: instructions for coding agents
 
-AuditGym is an RL environment for training AI financial auditors. A generator builds a fictional company's books, injects known errors and records what it changed. An agent inspects the books through five tools and submits findings with evidence. A grader scores them.
+CookedBooks is an RL environment for training AI financial auditors. A generator builds a fictional company's books, injects known errors and records what it changed. An agent inspects the books through five tools and submits findings with evidence. A grader scores them.
 
 It is a hackathon entry (Genesis Hackathon 2026, FinTech track). The jury does not rank our agent. It runs 80 published pass/fail checks against our environment. Every rule below exists because one of those checks depends on it.
 
@@ -51,8 +51,8 @@ Breaking any of these loses points or blocks scoring.
 **Isolation**
 - In `closed` mode the environment never opens `truth.json` or `provenance.json` and always returns reward `0`.
 - Scoring happens only in `judge_adapter.score_episode` (and at `submit` in `train` mode, through the same function).
-- `auditgym/policies` must not import `auditgym.grader`, `auditgym.world` or `auditgym.verifier`.
-- `auditgym/verifier` must not import `auditgym.world`. The verifier has to reach the same ground truth with independent code.
+- `cookedbooks/policies` must not import `cookedbooks.grader`, `cookedbooks.world` or `cookedbooks.verifier`.
+- `cookedbooks/verifier` must not import `cookedbooks.world`. The verifier has to reach the same ground truth with independent code.
 - Tools look records up by dictionary key. No tool turns a caller's string into a file path.
 - Error responses are a fixed code and a short message. No paths, tracebacks, seeds or ground truth.
 - The calculator parses with `ast` against a whitelist. Never `eval` or `exec`.

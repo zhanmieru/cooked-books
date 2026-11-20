@@ -1,6 +1,8 @@
-# AuditGym
+# CookedBooks
 
 A reproducible RL environment for training AI financial auditors: synthetic company books with hidden, provable errors, a narrow tool interface, an isolated grader, and a reward that is hard to game.
+
+The name: "cooking the books" means falsifying a company's accounts. Here the books are cooked on purpose and by a recorded recipe, so every error in them is known and provable.
 
 Built for Genesis Hackathon 2026 (FinTech track). Work in progress.
 
