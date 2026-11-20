@@ -1,0 +1,9 @@
+{
+  "config_version": "1",
+  "n_ledger_rows": 600,
+  "n_documents": 90,
+  "base_currency": "KZT",
+  "currencies": ["KZT"],
+  "timezone": "Asia/Almaty",
+  "distractors": {"recurring_amount": 2}
+}

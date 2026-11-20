@@ -1,0 +1,11 @@
+{
+  "config_version": "1",
+  "n_ledger_rows": 1200,
+  "n_documents": 150,
+  "base_currency": "KZT",
+  "currencies": ["KZT", "USD", "EUR"],
+  "timezone": "Asia/Almaty",
+  "errors": {"unallocated_payment": {"missing": 1, "partial": 1}},
+  "scenarios": {},
+  "distractors": {"split_payment": 2, "advance": 1, "refund": 1, "overpayment": 2}
+}

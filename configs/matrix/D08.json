@@ -1,0 +1,12 @@
+{
+  "config_version": "1",
+  "n_ledger_rows": 1500,
+  "n_documents": 160,
+  "base_currency": "USD",
+  "currencies": ["USD", "EUR", "JPY"],
+  "timezone": "America/Bogota",
+  "rounding": "half_even",
+  "errors": {"duplicate_invoice": 3},
+  "scenarios": {},
+  "distractors": {"split_payment": 2, "recurring_amount": 2}
+}

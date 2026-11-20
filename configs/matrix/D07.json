@@ -1,0 +1,11 @@
+{
+  "config_version": "1",
+  "n_ledger_rows": 800,
+  "n_documents": 110,
+  "base_currency": "KZT",
+  "currencies": ["KZT", "USD"],
+  "timezone": "Asia/Almaty",
+  "errors": {"duplicate_invoice": 2},
+  "scenarios": {},
+  "distractors": {"recurring_amount": 2, "boundary": 1}
+}
