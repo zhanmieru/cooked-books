@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-39921b47",
+  "base_currency": "EUR",
+  "period_start": "2026-07-01T00:00:00+08:00",
+  "period_end": "2026-09-30T23:59:59+08:00",
+  "timezone": "Asia/Shanghai",
+  "utc_offset": "+08:00",
+  "record_counts": {
+    "ledger": 500,
+    "invoices": 46,
+    "payments": 29,
+    "fx": 180
+  },
+  "document_count": 75,
+  "currency_exponents": {
+    "EUR": 2,
+    "JPY": 0,
+    "USD": 2
+  },
+  "rounding": {
+    "mode": "half_even",
+    "unit": "minor"
+  }
+}

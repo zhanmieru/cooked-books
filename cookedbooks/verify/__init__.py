@@ -7,7 +7,15 @@ reads the JUnit XML it writes, and maps test names to the jury's check IDs:
 as passed only when it has at least one test and all of its tests passed.
 
 The summary is printed and written to `reports/verify_report.md`. Nothing in
-the report depends on the clock except the duration line.
+the report depends on the clock except the duration line and the time column
+of the baseline diagnostics.
+
+After the jury blocks the report shows the baseline diagnostics
+(`cookedbooks.runner.diagnostics`): every baseline policy run in its own
+restricted process on the open dev episodes (and, in a second table, the
+train episodes) in `closed` mode, with mean precision, recall, F1, return,
+inspection steps and wall time per episode. They describe the baselines, not
+training. `--no-baselines` skips them; `make baselines` prints only them.
 
 The jury blocks are data: `BLOCK_SPECS` lists each block's rows as
 (label, ID prefix, count). A block whose tests do not exist yet has only a
@@ -199,7 +207,7 @@ BLOCK_SPECS: List[Tuple[int, str, Any]] = [
     (1, "Contract and isolation", [("C01-C20", "C", 20)]),
     (2, "Data and ground truth", [("D01-D20", "D", 20)]),
     (3, "Matcher and reward", [("tests 1-20 (R01-R20)", "R", 20), ("examples M01-M12", "M", 12)]),
-    (4, "Reproducibility", "P01-P20"),  # -> [("P01-P20", "P", 20)] once tests/jury/test_block4_pairs.py exists
+    (4, "Reproducibility", [("P01-P20", "P", 20)]),
 ]
 
 
@@ -222,8 +230,11 @@ BLOCKS: List[Callable[[Results], Block]] = [make_block(*spec) for spec in BLOCK_
 # Report
 
 
-def render(results: Results, duration_s: Optional[float] = None) -> str:
-    """The summary as Markdown. Same text goes to the console and the file."""
+def render(results: Results, duration_s: Optional[float] = None, diagnostics: Optional[str] = None) -> str:
+    """The summary as Markdown. Same text goes to the console and the file.
+
+    `diagnostics` is the baseline diagnostics section (Markdown), shown before the verdict.
+    """
     lines = [
         "# CookedBooks verification",
         "",
@@ -248,6 +259,8 @@ def render(results: Results, duration_s: Optional[float] = None) -> str:
         lines += [generation_line(results.generation), ""]
     if problems:
         lines += ["Not passing:", ""] + problems + [""]
+    if diagnostics:
+        lines += [diagnostics.rstrip("\n"), ""]
     lines.append("Verdict: %s" % ("PASS" if results.green else "FAIL"))
     if duration_s is not None:
         lines += ["", "Duration: %.1f s" % duration_s]
@@ -265,6 +278,16 @@ def generation_line(stats: Dict[str, Any]) -> str:
     if codes:
         line += " Codes: " + ", ".join("%s x%d" % (code, codes[code]) for code in sorted(codes)) + "."
     return line
+
+
+def baseline_diagnostics() -> str:
+    """The baseline diagnostics section, or one line saying why it is unavailable."""
+    try:
+        from cookedbooks.runner.diagnostics import section
+
+        return section()
+    except Exception as exc:  # the report must still be written
+        return "## Baseline diagnostics\n\nUnavailable: %s.\n" % type(exc).__name__
 
 
 def write_report(text: str, path: Path) -> Path:
@@ -364,6 +387,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="only check that vendor/wheels matches requirements.lock",
     )
     parser.add_argument(
+        "--no-baselines",
+        action="store_true",
+        help="skip the baseline diagnostics tables",
+    )
+    parser.add_argument(
         "pytest_args",
         nargs=argparse.REMAINDER,
         help="extra pytest arguments after --, for example test paths",
@@ -383,7 +411,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     start = time.monotonic()
     results = run_pytest(pytest_args)
-    text = render(results, time.monotonic() - start)
+    diagnostics = None if args.no_baselines else baseline_diagnostics()
+    text = render(results, time.monotonic() - start, diagnostics)
     print()
     print(text, end="")
     where = write_report(text, args.report)

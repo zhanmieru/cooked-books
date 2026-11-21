@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-944d11eb",
+  "generator_version": "0.2.0",
+  "seed": 72000002,
+  "attempt": 0,
+  "team_config": {
+    "config_version": "1",
+    "n_ledger_rows": 700,
+    "n_documents": 100,
+    "base_currency": "KZT",
+    "currencies": [
+      "KZT",
+      "EUR"
+    ],
+    "timezone": "America/Lima",
+    "errors": {
+      "duplicate_invoice": 0,
+      "unallocated_payment": {
+        "missing": 0,
+        "partial": 0
+      },
+      "fx_error": {
+        "wrong_date": 0,
+        "wrong_pair": 0
+      },
+      "cutoff_error": {
+        "late": 0,
+        "early": 0
+      }
+    },
+    "scenarios": {
+      "S1": 0,
+      "S2": 0
+    },
+    "distractors": {
+      "split_payment": 1,
+      "refund": 0,
+      "recurring_amount": 0,
+      "boundary": 6,
+      "advance": 0,
+      "overpayment": 2
+    },
+    "rounding": "half_up",
+    "fx_rate_date": "document_date",
+    "period_start": "2026-07-01",
+    "period_months": 3
+  },
+  "injections": [],
+  "distractors": [
+    {
+      "kind": "overpayment",
+      "ids": [
+        "doc-cb025fd0",
+        "doc-e2c042d1"
+      ]
+    },
+    {
+      "kind": "overpayment",
+      "ids": [
+        "doc-4a8cd1df",
+        "doc-e9b226b4"
+      ]
+    },
+    {
+      "kind": "split_payment",
+      "ids": [
+        "doc-48a9b0ce",
+        "doc-008c37c1",
+        "doc-1ae4f3f3"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-a52e334f"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-4c1dc033",
+        "doc-011963e3"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-84f51564"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-af016311",
+        "doc-7000fe52"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-71661994",
+        "doc-5028145e"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-1322fbee"
+      ]
+    }
+  ]
+}

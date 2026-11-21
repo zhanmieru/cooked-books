@@ -1,0 +1,412 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-79e173b4",
+  "generator_version": "0.2.0",
+  "seed": 71000009,
+  "attempt": 0,
+  "team_config": {
+    "config_version": "1",
+    "n_ledger_rows": 700,
+    "n_documents": 100,
+    "base_currency": "KWD",
+    "currencies": [
+      "KWD",
+      "USD"
+    ],
+    "timezone": "Asia/Riyadh",
+    "errors": {
+      "duplicate_invoice": 1,
+      "unallocated_payment": {
+        "missing": 0,
+        "partial": 1
+      },
+      "fx_error": {
+        "wrong_date": 1,
+        "wrong_pair": 0
+      },
+      "cutoff_error": {
+        "late": 1,
+        "early": 0
+      }
+    },
+    "scenarios": {
+      "S1": 0,
+      "S2": 0
+    },
+    "distractors": {
+      "split_payment": 2,
+      "refund": 0,
+      "recurring_amount": 0,
+      "boundary": 0,
+      "advance": 0,
+      "overpayment": 0
+    },
+    "rounding": "half_up",
+    "fx_rate_date": "document_date",
+    "period_start": "2026-07-01",
+    "period_months": 3
+  },
+  "injections": [
+    {
+      "issue_ids": [
+        "ISS-0001"
+      ],
+      "kind": "duplicate_invoice",
+      "variant": null,
+      "scenario": null,
+      "description": "Счёт за то же обязательство выставлен второй раз под новым номером",
+      "changes": [
+        {
+          "file": "invoices.jsonl",
+          "op": "add",
+          "key": "doc-2eabeef0",
+          "before": null,
+          "after": {
+            "doc_id": "doc-2eabeef0",
+            "invoice_id": "INV-19166c3f",
+            "entity_id": "cust-04ace88f",
+            "issued_at": "2026-09-02T13:10:12+00:00",
+            "due_at": "2026-10-02T23:59:59+03:00",
+            "currency": "KWD",
+            "total_minor": 2944320,
+            "line_items": [
+              {
+                "description": "Training session",
+                "quantity": 10,
+                "unit_price_minor": 21980,
+                "amount_minor": 219800
+              },
+              {
+                "description": "Security audit",
+                "quantity": 8,
+                "unit_price_minor": 340565,
+                "amount_minor": 2724520
+              }
+            ],
+            "po_ref": "PO-154472",
+            "service_period": "2026-08"
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-373e9a43",
+          "before": null,
+          "after": {
+            "row_id": "row-373e9a43",
+            "timestamp": "2026-09-02T16:10:12+03:00",
+            "account": "AR",
+            "debit_minor": 2944320,
+            "credit_minor": 0,
+            "currency": "KWD",
+            "entity_id": "cust-04ace88f",
+            "invoice_id": "INV-19166c3f",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-fdfa43ed",
+          "before": null,
+          "after": {
+            "row_id": "row-fdfa43ed",
+            "timestamp": "2026-09-02T16:10:12+03:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 2944320,
+            "currency": "KWD",
+            "entity_id": "cust-04ace88f",
+            "invoice_id": "INV-19166c3f",
+            "payment_id": null
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C5",
+          "currency": "KWD",
+          "delta_minor": 2944320
+        }
+      ]
+    },
+    {
+      "issue_ids": [
+        "ISS-0002"
+      ],
+      "kind": "unallocated_payment",
+      "variant": "partial",
+      "scenario": null,
+      "description": "Платёж распределён частично: остаток ушёл в авансы, счёт остался открытым",
+      "changes": [
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-eb2536b0",
+          "before": {
+            "row_id": "row-eb2536b0",
+            "timestamp": "2026-10-05T00:39:16+03:00",
+            "account": "AR",
+            "debit_minor": 0,
+            "credit_minor": 6900285,
+            "currency": "KWD",
+            "entity_id": "cust-12340bf3",
+            "invoice_id": "INV-c84ee919",
+            "payment_id": "PAY-a319cad8"
+          },
+          "after": {
+            "row_id": "row-eb2536b0",
+            "timestamp": "2026-10-05T00:39:16+03:00",
+            "account": "AR",
+            "debit_minor": 0,
+            "credit_minor": 6279260,
+            "currency": "KWD",
+            "entity_id": "cust-12340bf3",
+            "invoice_id": "INV-c84ee919",
+            "payment_id": "PAY-a319cad8"
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-13008ec8",
+          "before": null,
+          "after": {
+            "row_id": "row-13008ec8",
+            "timestamp": "2026-10-05T00:39:16+03:00",
+            "account": "CUSTOMER_ADVANCES",
+            "debit_minor": 0,
+            "credit_minor": 621025,
+            "currency": "KWD",
+            "entity_id": "cust-12340bf3",
+            "invoice_id": null,
+            "payment_id": "PAY-a319cad8"
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C4",
+          "currency": "KWD",
+          "delta_minor": 621025
+        }
+      ]
+    },
+    {
+      "issue_ids": [
+        "ISS-0003"
+      ],
+      "kind": "fx_error",
+      "variant": "wrong_date",
+      "scenario": null,
+      "description": "Валютный счёт пересчитан по курсу другой даты",
+      "changes": [
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-96f83227",
+          "before": {
+            "row_id": "row-96f83227",
+            "timestamp": "2026-08-17T12:54:42+03:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 6493871,
+            "credit_minor": 0,
+            "currency": "KWD",
+            "entity_id": "cust-12340bf3",
+            "invoice_id": "INV-badaf19b",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-96f83227",
+            "timestamp": "2026-08-17T12:54:42+03:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 6942849,
+            "credit_minor": 0,
+            "currency": "KWD",
+            "entity_id": "cust-12340bf3",
+            "invoice_id": "INV-badaf19b",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-ab4b8995",
+          "before": {
+            "row_id": "row-ab4b8995",
+            "timestamp": "2026-08-17T12:54:42+03:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 6493871,
+            "currency": "KWD",
+            "entity_id": "cust-12340bf3",
+            "invoice_id": "INV-badaf19b",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-ab4b8995",
+            "timestamp": "2026-08-17T12:54:42+03:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 6942849,
+            "currency": "KWD",
+            "entity_id": "cust-12340bf3",
+            "invoice_id": "INV-badaf19b",
+            "payment_id": null
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C3",
+          "currency": "KWD",
+          "delta_minor": 448978
+        }
+      ]
+    },
+    {
+      "issue_ids": [
+        "ISS-0004"
+      ],
+      "kind": "cutoff_error",
+      "variant": "late",
+      "scenario": null,
+      "description": "Счёт выставлен в периоде, а проведён после его конца",
+      "changes": [
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-4668c2e8",
+          "before": {
+            "row_id": "row-4668c2e8",
+            "timestamp": "2026-09-30T16:51:38+03:00",
+            "account": "AR",
+            "debit_minor": 1837015,
+            "credit_minor": 0,
+            "currency": "USD",
+            "entity_id": "cust-2e511e31",
+            "invoice_id": "INV-108caef3",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-4668c2e8",
+            "timestamp": "2026-10-02T13:49:20+03:00",
+            "account": "AR",
+            "debit_minor": 1837015,
+            "credit_minor": 0,
+            "currency": "USD",
+            "entity_id": "cust-2e511e31",
+            "invoice_id": "INV-108caef3",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-5afe4e66",
+          "before": {
+            "row_id": "row-5afe4e66",
+            "timestamp": "2026-09-30T16:51:38+03:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 0,
+            "credit_minor": 1837015,
+            "currency": "USD",
+            "entity_id": "cust-2e511e31",
+            "invoice_id": "INV-108caef3",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-5afe4e66",
+            "timestamp": "2026-10-02T13:49:20+03:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 0,
+            "credit_minor": 1837015,
+            "currency": "USD",
+            "entity_id": "cust-2e511e31",
+            "invoice_id": "INV-108caef3",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-e90e4233",
+          "before": {
+            "row_id": "row-e90e4233",
+            "timestamp": "2026-09-30T16:51:38+03:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 5202794,
+            "credit_minor": 0,
+            "currency": "KWD",
+            "entity_id": "cust-2e511e31",
+            "invoice_id": "INV-108caef3",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-e90e4233",
+            "timestamp": "2026-10-02T13:49:20+03:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 5202794,
+            "credit_minor": 0,
+            "currency": "KWD",
+            "entity_id": "cust-2e511e31",
+            "invoice_id": "INV-108caef3",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-2c041ed8",
+          "before": {
+            "row_id": "row-2c041ed8",
+            "timestamp": "2026-09-30T16:51:38+03:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 5202794,
+            "currency": "KWD",
+            "entity_id": "cust-2e511e31",
+            "invoice_id": "INV-108caef3",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-2c041ed8",
+            "timestamp": "2026-10-02T13:49:20+03:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 5202794,
+            "currency": "KWD",
+            "entity_id": "cust-2e511e31",
+            "invoice_id": "INV-108caef3",
+            "payment_id": null
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C6",
+          "currency": "USD",
+          "delta_minor": 1837015
+        }
+      ]
+    }
+  ],
+  "distractors": [
+    {
+      "kind": "split_payment",
+      "ids": [
+        "doc-9b74cace",
+        "doc-68c27b77",
+        "doc-3484d448"
+      ]
+    },
+    {
+      "kind": "split_payment",
+      "ids": [
+        "doc-f6272bea",
+        "doc-f3af73cd",
+        "doc-7b77fe7d"
+      ]
+    }
+  ]
+}

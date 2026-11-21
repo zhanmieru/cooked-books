@@ -1,0 +1,285 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-7ede3f13",
+  "generator_version": "0.2.0",
+  "seed": 71000003,
+  "attempt": 0,
+  "team_config": {
+    "config_version": "1",
+    "n_ledger_rows": 400,
+    "n_documents": 60,
+    "base_currency": "KZT",
+    "currencies": [
+      "KZT"
+    ],
+    "timezone": "Asia/Almaty",
+    "errors": {
+      "duplicate_invoice": 2,
+      "unallocated_payment": {
+        "missing": 0,
+        "partial": 0
+      },
+      "fx_error": {
+        "wrong_date": 0,
+        "wrong_pair": 0
+      },
+      "cutoff_error": {
+        "late": 0,
+        "early": 0
+      }
+    },
+    "scenarios": {
+      "S1": 0,
+      "S2": 0
+    },
+    "distractors": {
+      "split_payment": 0,
+      "refund": 0,
+      "recurring_amount": 2,
+      "boundary": 0,
+      "advance": 0,
+      "overpayment": 0
+    },
+    "rounding": "half_up",
+    "fx_rate_date": "document_date",
+    "period_start": "2026-07-01",
+    "period_months": 3
+  },
+  "injections": [
+    {
+      "issue_ids": [
+        "ISS-0001"
+      ],
+      "kind": "duplicate_invoice",
+      "variant": null,
+      "scenario": null,
+      "description": "Счёт за то же обязательство выставлен второй раз под новым номером",
+      "changes": [
+        {
+          "file": "invoices.jsonl",
+          "op": "add",
+          "key": "doc-b4b2b521",
+          "before": null,
+          "after": {
+            "doc_id": "doc-b4b2b521",
+            "invoice_id": "INV-3dded88e",
+            "entity_id": "cust-786e0a45",
+            "issued_at": "2026-09-10T10:06:01+05:00",
+            "due_at": "2026-10-10T23:59:59+05:00",
+            "currency": "KZT",
+            "total_minor": 748030800,
+            "line_items": [
+              {
+                "description": "Software support",
+                "quantity": 9,
+                "unit_price_minor": 29994100,
+                "amount_minor": 269946900
+              },
+              {
+                "description": "Network setup",
+                "quantity": 3,
+                "unit_price_minor": 42332300,
+                "amount_minor": 126996900
+              },
+              {
+                "description": "Security audit",
+                "quantity": 6,
+                "unit_price_minor": 58514500,
+                "amount_minor": 351087000
+              }
+            ],
+            "po_ref": "PO-741270",
+            "service_period": "2026-09"
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-a26b220a",
+          "before": null,
+          "after": {
+            "row_id": "row-a26b220a",
+            "timestamp": "2026-09-12T18:18:55+05:00",
+            "account": "AR",
+            "debit_minor": 748030800,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-786e0a45",
+            "invoice_id": "INV-3dded88e",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-2a69e9cb",
+          "before": null,
+          "after": {
+            "row_id": "row-2a69e9cb",
+            "timestamp": "2026-09-12T18:18:55+05:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 748030800,
+            "currency": "KZT",
+            "entity_id": "cust-786e0a45",
+            "invoice_id": "INV-3dded88e",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "payments.jsonl",
+          "op": "add",
+          "key": "doc-ab1b2f90",
+          "before": null,
+          "after": {
+            "doc_id": "doc-ab1b2f90",
+            "payment_id": "PAY-e222e37e",
+            "timestamp": "2026-09-27T08:41:13+05:00",
+            "currency": "KZT",
+            "amount_minor": 748030800,
+            "invoice_refs": [
+              "INV-3dded88e"
+            ]
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-5c76fe59",
+          "before": null,
+          "after": {
+            "row_id": "row-5c76fe59",
+            "timestamp": "2026-09-27T08:41:13+05:00",
+            "account": "CASH",
+            "debit_minor": 748030800,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-786e0a45",
+            "invoice_id": null,
+            "payment_id": "PAY-e222e37e"
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-a192e6d6",
+          "before": null,
+          "after": {
+            "row_id": "row-a192e6d6",
+            "timestamp": "2026-09-27T08:41:13+05:00",
+            "account": "AR",
+            "debit_minor": 0,
+            "credit_minor": 748030800,
+            "currency": "KZT",
+            "entity_id": "cust-786e0a45",
+            "invoice_id": "INV-3dded88e",
+            "payment_id": "PAY-e222e37e"
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C5",
+          "currency": "KZT",
+          "delta_minor": 748030800
+        }
+      ]
+    },
+    {
+      "issue_ids": [
+        "ISS-0002"
+      ],
+      "kind": "duplicate_invoice",
+      "variant": null,
+      "scenario": null,
+      "description": "Счёт за то же обязательство выставлен второй раз под новым номером",
+      "changes": [
+        {
+          "file": "invoices.jsonl",
+          "op": "add",
+          "key": "doc-a1a62840",
+          "before": null,
+          "after": {
+            "doc_id": "doc-a1a62840",
+            "invoice_id": "INV-f03ca722",
+            "entity_id": "cust-f828ec4f",
+            "issued_at": "2026-09-04T14:29:03+05:00",
+            "due_at": "2026-10-19T23:59:59+05:00",
+            "currency": "KZT",
+            "total_minor": 196205600,
+            "line_items": [
+              {
+                "description": "Network setup",
+                "quantity": 4,
+                "unit_price_minor": 49051400,
+                "amount_minor": 196205600
+              }
+            ],
+            "po_ref": "PO-494196",
+            "service_period": "2026-08"
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-bce02462",
+          "before": null,
+          "after": {
+            "row_id": "row-bce02462",
+            "timestamp": "2026-09-05T13:17:40+05:00",
+            "account": "AR",
+            "debit_minor": 196205600,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-f828ec4f",
+            "invoice_id": "INV-f03ca722",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-9e0ab8d2",
+          "before": null,
+          "after": {
+            "row_id": "row-9e0ab8d2",
+            "timestamp": "2026-09-05T13:17:40+05:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 196205600,
+            "currency": "KZT",
+            "entity_id": "cust-f828ec4f",
+            "invoice_id": "INV-f03ca722",
+            "payment_id": null
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C5",
+          "currency": "KZT",
+          "delta_minor": 196205600
+        }
+      ]
+    }
+  ],
+  "distractors": [
+    {
+      "kind": "recurring_amount",
+      "ids": [
+        "doc-d627b381",
+        "doc-0d80d157",
+        "doc-2e065f92",
+        "doc-0cfd5ded"
+      ]
+    },
+    {
+      "kind": "recurring_amount",
+      "ids": [
+        "doc-5d4c0773",
+        "doc-afb39f0a",
+        "doc-d28f6be2"
+      ]
+    }
+  ]
+}

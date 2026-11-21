@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-3cc9db43",
+  "generator_version": "0.2.0",
+  "seed": 72000001,
+  "attempt": 0,
+  "team_config": {
+    "config_version": "1",
+    "n_ledger_rows": 500,
+    "n_documents": 75,
+    "base_currency": "KZT",
+    "currencies": [
+      "KZT"
+    ],
+    "timezone": "Asia/Tashkent",
+    "errors": {
+      "duplicate_invoice": 0,
+      "unallocated_payment": {
+        "missing": 0,
+        "partial": 0
+      },
+      "fx_error": {
+        "wrong_date": 0,
+        "wrong_pair": 0
+      },
+      "cutoff_error": {
+        "late": 0,
+        "early": 0
+      }
+    },
+    "scenarios": {
+      "S1": 0,
+      "S2": 0
+    },
+    "distractors": {
+      "split_payment": 0,
+      "refund": 1,
+      "recurring_amount": 3,
+      "boundary": 0,
+      "advance": 0,
+      "overpayment": 0
+    },
+    "rounding": "half_up",
+    "fx_rate_date": "document_date",
+    "period_start": "2026-07-01",
+    "period_months": 3
+  },
+  "injections": [],
+  "distractors": [
+    {
+      "kind": "refund",
+      "ids": [
+        "doc-531cefe0",
+        "doc-1a6d3e38",
+        "doc-4c07d0af",
+        "doc-f3c20c31"
+      ]
+    },
+    {
+      "kind": "recurring_amount",
+      "ids": [
+        "doc-e2626b5a",
+        "doc-aa76da30",
+        "doc-db12e1a3"
+      ]
+    },
+    {
+      "kind": "recurring_amount",
+      "ids": [
+        "doc-f443798b",
+        "doc-d7dfea2d",
+        "doc-b381dca1"
+      ]
+    },
+    {
+      "kind": "recurring_amount",
+      "ids": [
+        "doc-36b6399d",
+        "doc-a992ac2d",
+        "doc-82c676c8",
+        "doc-9a3cdd02"
+      ]
+    }
+  ]
+}

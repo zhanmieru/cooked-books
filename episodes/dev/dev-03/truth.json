@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-50a074d6",
+  "issues": [
+    {
+      "issue_id": "ISS-0001",
+      "type": "duplicate_invoice",
+      "affected_ids": [
+        "doc-416275b6",
+        "doc-e2629887"
+      ],
+      "expected_amount_minor": 1021130,
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "doc-416275b6",
+          "doc-e2629887"
+        ]
+      ]
+    }
+  ]
+}

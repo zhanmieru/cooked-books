@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-d6cb11e4",
+  "base_currency": "KZT",
+  "period_start": "2026-07-01T00:00:00+05:00",
+  "period_end": "2026-09-30T23:59:59+05:00",
+  "timezone": "Asia/Almaty",
+  "utc_offset": "+05:00",
+  "record_counts": {
+    "ledger": 900,
+    "invoices": 72,
+    "payments": 48,
+    "fx": 270
+  },
+  "document_count": 120,
+  "currency_exponents": {
+    "EUR": 2,
+    "JPY": 0,
+    "KZT": 2,
+    "USD": 2
+  },
+  "rounding": {
+    "mode": "half_even",
+    "unit": "minor"
+  }
+}

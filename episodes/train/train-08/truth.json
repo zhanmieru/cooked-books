@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-39921b47",
+  "issues": [
+    {
+      "issue_id": "ISS-0001",
+      "type": "duplicate_invoice",
+      "affected_ids": [
+        "doc-9f3480f5",
+        "doc-211b69e8"
+      ],
+      "expected_amount_minor": 1770600,
+      "currency": "JPY",
+      "evidence_sets": [
+        [
+          "doc-9f3480f5",
+          "doc-211b69e8"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0002",
+      "type": "fx_error",
+      "affected_ids": [
+        "doc-211b69e8"
+      ],
+      "expected_amount_minor": 17599,
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "doc-211b69e8",
+          "row-55eb77c6",
+          "2026-06-22:JPY:EUR"
+        ]
+      ]
+    }
+  ]
+}

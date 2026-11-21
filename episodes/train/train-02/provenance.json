@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-a387c16b",
+  "generator_version": "0.2.0",
+  "seed": 71000002,
+  "attempt": 0,
+  "team_config": {
+    "config_version": "1",
+    "n_ledger_rows": 400,
+    "n_documents": 60,
+    "base_currency": "KZT",
+    "currencies": [
+      "KZT",
+      "USD"
+    ],
+    "timezone": "Asia/Tokyo",
+    "errors": {
+      "duplicate_invoice": 0,
+      "unallocated_payment": {
+        "missing": 0,
+        "partial": 0
+      },
+      "fx_error": {
+        "wrong_date": 0,
+        "wrong_pair": 0
+      },
+      "cutoff_error": {
+        "late": 0,
+        "early": 0
+      }
+    },
+    "scenarios": {
+      "S1": 0,
+      "S2": 0
+    },
+    "distractors": {
+      "split_payment": 0,
+      "refund": 1,
+      "recurring_amount": 0,
+      "boundary": 6,
+      "advance": 1,
+      "overpayment": 0
+    },
+    "rounding": "half_up",
+    "fx_rate_date": "document_date",
+    "period_start": "2026-07-01",
+    "period_months": 3
+  },
+  "injections": [],
+  "distractors": [
+    {
+      "kind": "refund",
+      "ids": [
+        "doc-5368eb96",
+        "doc-c2a058be",
+        "doc-70bccf7b",
+        "doc-b7e68f76"
+      ]
+    },
+    {
+      "kind": "advance",
+      "ids": [
+        "doc-860ede23"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-e8bb6725",
+        "doc-6d10a681"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-b037f537"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-e1951956"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-e311d540",
+        "doc-0a89826a"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-15081e0d",
+        "doc-7f1db451"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-8002fb9c",
+        "doc-22e0ae9e"
+      ]
+    }
+  ]
+}

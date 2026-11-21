@@ -1,0 +1,199 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-22170518",
+  "generator_version": "0.2.0",
+  "seed": 72000005,
+  "attempt": 0,
+  "team_config": {
+    "config_version": "1",
+    "n_ledger_rows": 700,
+    "n_documents": 100,
+    "base_currency": "KZT",
+    "currencies": [
+      "KZT",
+      "USD"
+    ],
+    "timezone": "America/Bogota",
+    "errors": {
+      "duplicate_invoice": 0,
+      "unallocated_payment": {
+        "missing": 0,
+        "partial": 2
+      },
+      "fx_error": {
+        "wrong_date": 0,
+        "wrong_pair": 0
+      },
+      "cutoff_error": {
+        "late": 0,
+        "early": 0
+      }
+    },
+    "scenarios": {
+      "S1": 0,
+      "S2": 0
+    },
+    "distractors": {
+      "split_payment": 1,
+      "refund": 0,
+      "recurring_amount": 0,
+      "boundary": 0,
+      "advance": 0,
+      "overpayment": 2
+    },
+    "rounding": "half_up",
+    "fx_rate_date": "document_date",
+    "period_start": "2026-07-01",
+    "period_months": 3
+  },
+  "injections": [
+    {
+      "issue_ids": [
+        "ISS-0001"
+      ],
+      "kind": "unallocated_payment",
+      "variant": "partial",
+      "scenario": null,
+      "description": "Платёж распределён частично: остаток ушёл в авансы, счёт остался открытым",
+      "changes": [
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-bff05847",
+          "before": {
+            "row_id": "row-bff05847",
+            "timestamp": "2026-10-10T05:31:12-05:00",
+            "account": "AR",
+            "debit_minor": 0,
+            "credit_minor": 46966800,
+            "currency": "KZT",
+            "entity_id": "cust-79c795cc",
+            "invoice_id": "INV-22f6262e",
+            "payment_id": "PAY-ae893b68"
+          },
+          "after": {
+            "row_id": "row-bff05847",
+            "timestamp": "2026-10-10T05:31:12-05:00",
+            "account": "AR",
+            "debit_minor": 0,
+            "credit_minor": 33816096,
+            "currency": "KZT",
+            "entity_id": "cust-79c795cc",
+            "invoice_id": "INV-22f6262e",
+            "payment_id": "PAY-ae893b68"
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-1b9d87b3",
+          "before": null,
+          "after": {
+            "row_id": "row-1b9d87b3",
+            "timestamp": "2026-10-10T05:31:12-05:00",
+            "account": "CUSTOMER_ADVANCES",
+            "debit_minor": 0,
+            "credit_minor": 13150704,
+            "currency": "KZT",
+            "entity_id": "cust-79c795cc",
+            "invoice_id": null,
+            "payment_id": "PAY-ae893b68"
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C4",
+          "currency": "KZT",
+          "delta_minor": 13150704
+        }
+      ]
+    },
+    {
+      "issue_ids": [
+        "ISS-0002"
+      ],
+      "kind": "unallocated_payment",
+      "variant": "partial",
+      "scenario": null,
+      "description": "Платёж распределён частично: остаток ушёл в авансы, счёт остался открытым",
+      "changes": [
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-b2f78b17",
+          "before": {
+            "row_id": "row-b2f78b17",
+            "timestamp": "2026-10-05T06:27:43-05:00",
+            "account": "AR",
+            "debit_minor": 0,
+            "credit_minor": 745406900,
+            "currency": "KZT",
+            "entity_id": "cust-3851f79b",
+            "invoice_id": "INV-85dda15c",
+            "payment_id": "PAY-ab5f348e"
+          },
+          "after": {
+            "row_id": "row-b2f78b17",
+            "timestamp": "2026-10-05T06:27:43-05:00",
+            "account": "AR",
+            "debit_minor": 0,
+            "credit_minor": 447244140,
+            "currency": "KZT",
+            "entity_id": "cust-3851f79b",
+            "invoice_id": "INV-85dda15c",
+            "payment_id": "PAY-ab5f348e"
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-66941d93",
+          "before": null,
+          "after": {
+            "row_id": "row-66941d93",
+            "timestamp": "2026-10-05T06:27:43-05:00",
+            "account": "CUSTOMER_ADVANCES",
+            "debit_minor": 0,
+            "credit_minor": 298162760,
+            "currency": "KZT",
+            "entity_id": "cust-3851f79b",
+            "invoice_id": null,
+            "payment_id": "PAY-ab5f348e"
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C4",
+          "currency": "KZT",
+          "delta_minor": 298162760
+        }
+      ]
+    }
+  ],
+  "distractors": [
+    {
+      "kind": "overpayment",
+      "ids": [
+        "doc-9bfc28cb",
+        "doc-2ad7c193"
+      ]
+    },
+    {
+      "kind": "overpayment",
+      "ids": [
+        "doc-50278ac3",
+        "doc-1f99558f"
+      ]
+    },
+    {
+      "kind": "split_payment",
+      "ids": [
+        "doc-751552ca",
+        "doc-d008c95d",
+        "doc-36f2459c"
+      ]
+    }
+  ]
+}

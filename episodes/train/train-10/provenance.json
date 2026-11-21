@@ -1,0 +1,215 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-41d1caa3",
+  "generator_version": "0.2.0",
+  "seed": 71000010,
+  "attempt": 0,
+  "team_config": {
+    "config_version": "1",
+    "n_ledger_rows": 200,
+    "n_documents": 30,
+    "base_currency": "KZT",
+    "currencies": [
+      "KZT",
+      "USD"
+    ],
+    "timezone": "UTC",
+    "errors": {
+      "duplicate_invoice": 1,
+      "unallocated_payment": {
+        "missing": 0,
+        "partial": 0
+      },
+      "fx_error": {
+        "wrong_date": 0,
+        "wrong_pair": 0
+      },
+      "cutoff_error": {
+        "late": 0,
+        "early": 1
+      }
+    },
+    "scenarios": {
+      "S1": 0,
+      "S2": 0
+    },
+    "distractors": {
+      "split_payment": 0,
+      "refund": 0,
+      "recurring_amount": 0,
+      "boundary": 2,
+      "advance": 0,
+      "overpayment": 0
+    },
+    "rounding": "half_up",
+    "fx_rate_date": "document_date",
+    "period_start": "2026-07-01",
+    "period_months": 3
+  },
+  "injections": [
+    {
+      "issue_ids": [
+        "ISS-0001"
+      ],
+      "kind": "duplicate_invoice",
+      "variant": null,
+      "scenario": null,
+      "description": "Счёт за то же обязательство выставлен второй раз под новым номером",
+      "changes": [
+        {
+          "file": "invoices.jsonl",
+          "op": "add",
+          "key": "doc-8b66e054",
+          "before": null,
+          "after": {
+            "doc_id": "doc-8b66e054",
+            "invoice_id": "INV-be1cfe3d",
+            "entity_id": "cust-808f809a",
+            "issued_at": "2026-08-19T09:39:43+00:00",
+            "due_at": "2026-09-18T23:59:59+00:00",
+            "currency": "KZT",
+            "total_minor": 59297300,
+            "line_items": [
+              {
+                "description": "Report preparation",
+                "quantity": 1,
+                "unit_price_minor": 59297300,
+                "amount_minor": 59297300
+              }
+            ],
+            "po_ref": "PO-944666",
+            "service_period": "2026-07"
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-45103179",
+          "before": null,
+          "after": {
+            "row_id": "row-45103179",
+            "timestamp": "2026-08-19T09:39:43+00:00",
+            "account": "AR",
+            "debit_minor": 59297300,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-808f809a",
+            "invoice_id": "INV-be1cfe3d",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-795df485",
+          "before": null,
+          "after": {
+            "row_id": "row-795df485",
+            "timestamp": "2026-08-19T09:39:43+00:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 59297300,
+            "currency": "KZT",
+            "entity_id": "cust-808f809a",
+            "invoice_id": "INV-be1cfe3d",
+            "payment_id": null
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C5",
+          "currency": "KZT",
+          "delta_minor": 59297300
+        }
+      ]
+    },
+    {
+      "issue_ids": [
+        "ISS-0002"
+      ],
+      "kind": "cutoff_error",
+      "variant": "early",
+      "scenario": null,
+      "description": "Счёт выставлен после конца периода, а проведён внутри него",
+      "changes": [
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-27e7603b",
+          "before": {
+            "row_id": "row-27e7603b",
+            "timestamp": "2026-10-01T14:59:17+00:00",
+            "account": "AR",
+            "debit_minor": 212758800,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-738c3ee3",
+            "invoice_id": "INV-5656cc35",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-27e7603b",
+            "timestamp": "2026-09-29T10:06:54+00:00",
+            "account": "AR",
+            "debit_minor": 212758800,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-738c3ee3",
+            "invoice_id": "INV-5656cc35",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-75cd8db3",
+          "before": {
+            "row_id": "row-75cd8db3",
+            "timestamp": "2026-10-01T14:59:17+00:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 212758800,
+            "currency": "KZT",
+            "entity_id": "cust-738c3ee3",
+            "invoice_id": "INV-5656cc35",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-75cd8db3",
+            "timestamp": "2026-09-29T10:06:54+00:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 212758800,
+            "currency": "KZT",
+            "entity_id": "cust-738c3ee3",
+            "invoice_id": "INV-5656cc35",
+            "payment_id": null
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C6",
+          "currency": "KZT",
+          "delta_minor": 212758800
+        }
+      ]
+    }
+  ],
+  "distractors": [
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-25dc116d",
+        "doc-69b86c1d"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-1c69aaa6"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-dfba418c",
+  "issues": [
+    {
+      "issue_id": "ISS-0001",
+      "type": "cutoff_error",
+      "affected_ids": [
+        "doc-15465677"
+      ],
+      "expected_amount_minor": 1084930,
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "doc-15465677",
+          "row-ab5a5c92"
+        ],
+        [
+          "doc-15465677",
+          "row-25c8e57d"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0002",
+      "type": "cutoff_error",
+      "affected_ids": [
+        "doc-3ce5cc66"
+      ],
+      "expected_amount_minor": 522550400,
+      "currency": "KZT",
+      "evidence_sets": [
+        [
+          "doc-3ce5cc66",
+          "row-27f3fb9f"
+        ],
+        [
+          "doc-3ce5cc66",
+          "row-06712ac6"
+        ]
+      ]
+    }
+  ]
+}

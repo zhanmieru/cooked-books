@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-2750a379",
+  "issues": [
+    {
+      "issue_id": "ISS-0001",
+      "type": "duplicate_invoice",
+      "affected_ids": [
+        "doc-25e6d480",
+        "doc-ebc70bcd"
+      ],
+      "expected_amount_minor": 959590,
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "doc-25e6d480",
+          "doc-ebc70bcd"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0002",
+      "type": "unallocated_payment",
+      "affected_ids": [
+        "doc-23679839",
+        "doc-3ad16359"
+      ],
+      "expected_amount_minor": 520900,
+      "currency": "JPY",
+      "evidence_sets": [
+        [
+          "doc-23679839",
+          "doc-3ad16359"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0003",
+      "type": "fx_error",
+      "affected_ids": [
+        "doc-9a178be3"
+      ],
+      "expected_amount_minor": 2101414,
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "doc-9a178be3",
+          "row-a24f01a9",
+          "2026-08-26:EUR:USD"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0004",
+      "type": "cutoff_error",
+      "affected_ids": [
+        "doc-a66e87de"
+      ],
+      "expected_amount_minor": 2013810,
+      "currency": "JPY",
+      "evidence_sets": [
+        [
+          "doc-a66e87de",
+          "row-8c15a152"
+        ],
+        [
+          "doc-a66e87de",
+          "row-fa6b504f"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0005",
+      "type": "fx_error",
+      "affected_ids": [
+        "doc-828914e6"
+      ],
+      "expected_amount_minor": 21618,
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "doc-828914e6",
+          "row-c3912490",
+          "2026-10-01:JPY:USD"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0006",
+      "type": "unallocated_payment",
+      "affected_ids": [
+        "doc-505ca009",
+        "doc-828914e6"
+      ],
+      "expected_amount_minor": 243171,
+      "currency": "JPY",
+      "evidence_sets": [
+        [
+          "doc-505ca009",
+          "doc-828914e6"
+        ]
+      ]
+    }
+  ]
+}

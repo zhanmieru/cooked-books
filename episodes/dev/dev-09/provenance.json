@@ -1,0 +1,268 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-4aa56313",
+  "generator_version": "0.2.0",
+  "seed": 72000009,
+  "attempt": 0,
+  "team_config": {
+    "config_version": "1",
+    "n_ledger_rows": 800,
+    "n_documents": 110,
+    "base_currency": "KZT",
+    "currencies": [
+      "KZT",
+      "EUR"
+    ],
+    "timezone": "UTC",
+    "errors": {
+      "duplicate_invoice": 0,
+      "unallocated_payment": {
+        "missing": 0,
+        "partial": 0
+      },
+      "fx_error": {
+        "wrong_date": 0,
+        "wrong_pair": 0
+      },
+      "cutoff_error": {
+        "late": 0,
+        "early": 0
+      }
+    },
+    "scenarios": {
+      "S1": 0,
+      "S2": 1
+    },
+    "distractors": {
+      "split_payment": 0,
+      "refund": 0,
+      "recurring_amount": 2,
+      "boundary": 2,
+      "advance": 0,
+      "overpayment": 0
+    },
+    "rounding": "half_up",
+    "fx_rate_date": "document_date",
+    "period_start": "2026-07-01",
+    "period_months": 3
+  },
+  "injections": [
+    {
+      "issue_ids": [
+        "ISS-0001",
+        "ISS-0002"
+      ],
+      "kind": "S2",
+      "variant": null,
+      "scenario": "S2",
+      "description": "Счёт выставлен второй раз, и копия пересчитана по курсу другой даты",
+      "changes": [
+        {
+          "file": "invoices.jsonl",
+          "op": "add",
+          "key": "doc-553db295",
+          "before": null,
+          "after": {
+            "doc_id": "doc-553db295",
+            "invoice_id": "INV-446f7b4c",
+            "entity_id": "cust-8b33e13f",
+            "issued_at": "2026-09-02T15:30:38+00:00",
+            "due_at": "2026-10-17T23:59:59+00:00",
+            "currency": "EUR",
+            "total_minor": 2796170,
+            "line_items": [
+              {
+                "description": "Translation services",
+                "quantity": 9,
+                "unit_price_minor": 61660,
+                "amount_minor": 554940
+              },
+              {
+                "description": "Training session",
+                "quantity": 11,
+                "unit_price_minor": 133770,
+                "amount_minor": 1471470
+              },
+              {
+                "description": "Network setup",
+                "quantity": 8,
+                "unit_price_minor": 96220,
+                "amount_minor": 769760
+              }
+            ],
+            "po_ref": "PO-127102",
+            "service_period": "2026-08"
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-0ec6e4a6",
+          "before": null,
+          "after": {
+            "row_id": "row-0ec6e4a6",
+            "timestamp": "2026-08-31T09:56:04+00:00",
+            "account": "AR",
+            "debit_minor": 2796170,
+            "credit_minor": 0,
+            "currency": "EUR",
+            "entity_id": "cust-8b33e13f",
+            "invoice_id": "INV-446f7b4c",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-d3486aa9",
+          "before": null,
+          "after": {
+            "row_id": "row-d3486aa9",
+            "timestamp": "2026-08-31T09:56:04+00:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 0,
+            "credit_minor": 2796170,
+            "currency": "EUR",
+            "entity_id": "cust-8b33e13f",
+            "invoice_id": "INV-446f7b4c",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-e76448ae",
+          "before": null,
+          "after": {
+            "row_id": "row-e76448ae",
+            "timestamp": "2026-08-31T09:56:04+00:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 1598766121,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-8b33e13f",
+            "invoice_id": "INV-446f7b4c",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-514ddfdb",
+          "before": null,
+          "after": {
+            "row_id": "row-514ddfdb",
+            "timestamp": "2026-08-31T09:56:04+00:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 1598766121,
+            "currency": "KZT",
+            "entity_id": "cust-8b33e13f",
+            "invoice_id": "INV-446f7b4c",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-e76448ae",
+          "before": {
+            "row_id": "row-e76448ae",
+            "timestamp": "2026-08-31T09:56:04+00:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 1598766121,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-8b33e13f",
+            "invoice_id": "INV-446f7b4c",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-e76448ae",
+            "timestamp": "2026-08-31T09:56:04+00:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 1611992005,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-8b33e13f",
+            "invoice_id": "INV-446f7b4c",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-514ddfdb",
+          "before": {
+            "row_id": "row-514ddfdb",
+            "timestamp": "2026-08-31T09:56:04+00:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 1598766121,
+            "currency": "KZT",
+            "entity_id": "cust-8b33e13f",
+            "invoice_id": "INV-446f7b4c",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-514ddfdb",
+            "timestamp": "2026-08-31T09:56:04+00:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 1611992005,
+            "currency": "KZT",
+            "entity_id": "cust-8b33e13f",
+            "invoice_id": "INV-446f7b4c",
+            "payment_id": null
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C5",
+          "currency": "EUR",
+          "delta_minor": 2796170
+        },
+        {
+          "control": "C3",
+          "currency": "KZT",
+          "delta_minor": 13225884
+        }
+      ]
+    }
+  ],
+  "distractors": [
+    {
+      "kind": "recurring_amount",
+      "ids": [
+        "doc-149db82c",
+        "doc-69864462",
+        "doc-9a994316",
+        "doc-2a242386",
+        "doc-3a1b6249"
+      ]
+    },
+    {
+      "kind": "recurring_amount",
+      "ids": [
+        "doc-d6bcd33d",
+        "doc-eef649e9",
+        "doc-639f688a",
+        "doc-fbadfb92"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-ff5e8490",
+        "doc-132ed8ab"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-264d7954"
+      ]
+    }
+  ]
+}

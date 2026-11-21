@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-dfba418c",
+  "base_currency": "KZT",
+  "period_start": "2026-07-01T00:00:00+05:30",
+  "period_end": "2026-09-30T23:59:59+05:30",
+  "timezone": "Asia/Kolkata",
+  "utc_offset": "+05:30",
+  "record_counts": {
+    "ledger": 600,
+    "invoices": 57,
+    "payments": 33,
+    "fx": 180
+  },
+  "document_count": 90,
+  "currency_exponents": {
+    "KWD": 3,
+    "KZT": 2,
+    "USD": 2
+  },
+  "rounding": {
+    "mode": "half_up",
+    "unit": "minor"
+  }
+}

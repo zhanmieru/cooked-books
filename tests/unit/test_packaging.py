@@ -130,7 +130,16 @@ def test_id_counts_only_when_all_its_tests_pass():
     assert block3.rows[0].value == "19/20"
     assert block3.rows[0].problems == ["R20 (no test)"]
     assert block3.rows[1].value == "12/12"
-    assert block4.rows[0].value == "not implemented yet"
+    assert block4.rows[0].label == "P01-P20" and block4.rows[0].value == "0/20"
+    assert block4.rows[0].problems == ["P%02d (no test)" % n for n in range(1, 21)]
+
+    # Block 4 follows the same rule: an ID counts only when all of its tests pass.
+    pairs = [("P%02d" % n, PASSED) for n in range(1, 21)]
+    pairs += [("P03", PASSED), ("P03", "failed")]  # one of P03's two tests fails
+    pairs += [("P11", "skipped")]
+    block4 = BLOCKS[3](Results(exit_code=1, cases=pairs))
+    assert block4.rows[0].value == "18/20"
+    assert block4.rows[0].problems == ["P03 (failed)", "P11 (skipped)"]
 
 
 def test_report_prints_generation_stats_when_recorded():

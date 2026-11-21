@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-79e173b4",
+  "base_currency": "KWD",
+  "period_start": "2026-07-01T00:00:00+03:00",
+  "period_end": "2026-09-30T23:59:59+03:00",
+  "timezone": "Asia/Riyadh",
+  "utc_offset": "+03:00",
+  "record_counts": {
+    "ledger": 700,
+    "invoices": 61,
+    "payments": 39,
+    "fx": 180
+  },
+  "document_count": 100,
+  "currency_exponents": {
+    "JPY": 0,
+    "KWD": 3,
+    "USD": 2
+  },
+  "rounding": {
+    "mode": "half_up",
+    "unit": "minor"
+  }
+}

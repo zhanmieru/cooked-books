@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-26e5318e",
+  "issues": [
+    {
+      "issue_id": "ISS-0001",
+      "type": "fx_error",
+      "affected_ids": [
+        "doc-dbdcc90f"
+      ],
+      "expected_amount_minor": 540610,
+      "currency": "KZT",
+      "evidence_sets": [
+        [
+          "doc-dbdcc90f",
+          "row-eb33ba3a",
+          "2026-10-01:USD:KZT"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0002",
+      "type": "unallocated_payment",
+      "affected_ids": [
+        "doc-cd66dd79",
+        "doc-dbdcc90f"
+      ],
+      "expected_amount_minor": 30962,
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "doc-cd66dd79",
+          "doc-dbdcc90f"
+        ]
+      ]
+    }
+  ]
+}

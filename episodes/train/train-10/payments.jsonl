@@ -1,0 +1,11 @@
+{"doc_id": "doc-1fccec79", "payment_id": "PAY-f435bc00", "timestamp": "2026-07-02T09:32:13+00:00", "currency": "KZT", "amount_minor": 640509500, "invoice_refs": ["INV-1dd80362"]}
+{"doc_id": "doc-69b86c1d", "payment_id": "PAY-5042036c", "timestamp": "2026-07-22T22:47:11+00:00", "currency": "USD", "amount_minor": 520640, "invoice_refs": ["INV-47f731fb"]}
+{"doc_id": "doc-d1412882", "payment_id": "PAY-e565261a", "timestamp": "2026-07-30T04:20:37+00:00", "currency": "USD", "amount_minor": 353195, "invoice_refs": ["INV-212fcc41"]}
+{"doc_id": "doc-9219fbab", "payment_id": "PAY-e3388be6", "timestamp": "2026-08-12T16:53:19+00:00", "currency": "USD", "amount_minor": 1643035, "invoice_refs": ["INV-0b4502f7"]}
+{"doc_id": "doc-0f42da5c", "payment_id": "PAY-aae78984", "timestamp": "2026-08-15T06:08:02+00:00", "currency": "KZT", "amount_minor": 95062000, "invoice_refs": ["INV-ec87df55"]}
+{"doc_id": "doc-b4d89b10", "payment_id": "PAY-9eade314", "timestamp": "2026-08-20T18:03:03+00:00", "currency": "KZT", "amount_minor": 59297300, "invoice_refs": ["INV-fefae3df"]}
+{"doc_id": "doc-dfe897ca", "payment_id": "PAY-769cedfc", "timestamp": "2026-08-28T00:43:40+00:00", "currency": "KZT", "amount_minor": 387603200, "invoice_refs": ["INV-78f3a359"]}
+{"doc_id": "doc-014d7886", "payment_id": "PAY-f54c3da7", "timestamp": "2026-08-30T04:02:11+00:00", "currency": "USD", "amount_minor": 2011565, "invoice_refs": ["INV-0aa461e5"]}
+{"doc_id": "doc-b8fae44a", "payment_id": "PAY-11d5e852", "timestamp": "2026-09-12T11:18:48+00:00", "currency": "USD", "amount_minor": 1670140, "invoice_refs": ["INV-7fa951c1"]}
+{"doc_id": "doc-8a1788a0", "payment_id": "PAY-ca9aa761", "timestamp": "2026-09-16T12:30:10+00:00", "currency": "USD", "amount_minor": 513950, "invoice_refs": ["INV-347b963c"]}
+{"doc_id": "doc-0f269cbe", "payment_id": "PAY-76a21155", "timestamp": "2026-10-08T05:28:57+00:00", "currency": "USD", "amount_minor": 1210220, "invoice_refs": ["INV-7003c2a1"]}

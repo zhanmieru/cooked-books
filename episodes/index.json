@@ -1,0 +1,545 @@
+{
+  "format": "cookedbooks-open-episodes/1",
+  "about": "Open episodes: regenerate with `python -m cookedbooks.runner.episodes`, check with `--check`.",
+  "episodes": [
+    {
+      "split": "train",
+      "name": "train-01",
+      "seed": 71000001,
+      "note": "clean; look-alikes: recurring amounts, split payments",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 300,
+        "n_documents": 45,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT"
+        ],
+        "timezone": "Asia/Almaty",
+        "errors": {},
+        "scenarios": {},
+        "distractors": {
+          "recurring_amount": 2,
+          "split_payment": 2
+        }
+      }
+    },
+    {
+      "split": "train",
+      "name": "train-02",
+      "seed": 71000002,
+      "note": "clean; look-alikes: period/FX boundary, refund, advance",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 400,
+        "n_documents": 60,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT",
+          "USD"
+        ],
+        "timezone": "Asia/Tokyo",
+        "errors": {},
+        "scenarios": {},
+        "distractors": {
+          "boundary": 6,
+          "refund": 1,
+          "advance": 1
+        }
+      }
+    },
+    {
+      "split": "train",
+      "name": "train-03",
+      "seed": 71000003,
+      "note": "duplicate_invoice x2 next to recurring amounts",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 400,
+        "n_documents": 60,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT"
+        ],
+        "timezone": "Asia/Almaty",
+        "errors": {
+          "duplicate_invoice": 2
+        },
+        "scenarios": {},
+        "distractors": {
+          "recurring_amount": 2
+        }
+      }
+    },
+    {
+      "split": "train",
+      "name": "train-04",
+      "seed": 71000004,
+      "note": "unallocated_payment missing + partial next to overpayment, advance, refund",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 500,
+        "n_documents": 75,
+        "base_currency": "USD",
+        "currencies": [
+          "USD",
+          "KZT"
+        ],
+        "timezone": "Asia/Dubai",
+        "errors": {
+          "unallocated_payment": {
+            "missing": 1,
+            "partial": 1
+          }
+        },
+        "scenarios": {},
+        "distractors": {
+          "overpayment": 1,
+          "advance": 1,
+          "refund": 1
+        }
+      }
+    },
+    {
+      "split": "train",
+      "name": "train-05",
+      "seed": 71000005,
+      "note": "fx_error wrong_date + wrong_pair, three currencies",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 500,
+        "n_documents": 75,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT",
+          "USD",
+          "EUR"
+        ],
+        "timezone": "Asia/Kolkata",
+        "errors": {
+          "fx_error": {
+            "wrong_date": 1,
+            "wrong_pair": 1
+          }
+        },
+        "scenarios": {},
+        "distractors": {
+          "boundary": 4
+        }
+      }
+    },
+    {
+      "split": "train",
+      "name": "train-06",
+      "seed": 71000006,
+      "note": "cutoff_error late + early, UTC-5 company",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 400,
+        "n_documents": 60,
+        "base_currency": "USD",
+        "currencies": [
+          "USD",
+          "EUR"
+        ],
+        "timezone": "America/Bogota",
+        "errors": {
+          "cutoff_error": {
+            "late": 1,
+            "early": 1
+          }
+        },
+        "scenarios": {},
+        "distractors": {
+          "boundary": 6
+        }
+      }
+    },
+    {
+      "split": "train",
+      "name": "train-07",
+      "seed": 71000007,
+      "note": "scenario S1 (FX at the bound + partial payment)",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 400,
+        "n_documents": 60,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT",
+          "USD"
+        ],
+        "timezone": "Asia/Almaty",
+        "errors": {},
+        "scenarios": {
+          "S1": 1
+        },
+        "distractors": {
+          "boundary": 3,
+          "overpayment": 1
+        }
+      }
+    },
+    {
+      "split": "train",
+      "name": "train-08",
+      "seed": 71000008,
+      "note": "scenario S2 (duplicate converted at another rate)",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 500,
+        "n_documents": 75,
+        "base_currency": "EUR",
+        "currencies": [
+          "EUR",
+          "JPY"
+        ],
+        "timezone": "Asia/Shanghai",
+        "errors": {},
+        "scenarios": {
+          "S2": 1
+        },
+        "distractors": {
+          "recurring_amount": 2
+        },
+        "rounding": "half_even"
+      }
+    },
+    {
+      "split": "train",
+      "name": "train-09",
+      "seed": 71000009,
+      "note": "all four types, KWD with three decimals",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 700,
+        "n_documents": 100,
+        "base_currency": "KWD",
+        "currencies": [
+          "KWD",
+          "USD"
+        ],
+        "timezone": "Asia/Riyadh",
+        "errors": {
+          "duplicate_invoice": 1,
+          "unallocated_payment": {
+            "missing": 0,
+            "partial": 1
+          },
+          "fx_error": {
+            "wrong_date": 1,
+            "wrong_pair": 0
+          },
+          "cutoff_error": {
+            "late": 1,
+            "early": 0
+          }
+        },
+        "scenarios": {},
+        "distractors": {
+          "split_payment": 2
+        }
+      }
+    },
+    {
+      "split": "train",
+      "name": "train-10",
+      "seed": 71000010,
+      "note": "smallest: UTC company, cutoff early + duplicate",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 200,
+        "n_documents": 30,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT",
+          "USD"
+        ],
+        "timezone": "UTC",
+        "errors": {
+          "duplicate_invoice": 1,
+          "cutoff_error": {
+            "late": 0,
+            "early": 1
+          }
+        },
+        "scenarios": {},
+        "distractors": {
+          "boundary": 2
+        }
+      }
+    },
+    {
+      "split": "dev",
+      "name": "dev-01",
+      "seed": 72000001,
+      "note": "clean; look-alikes: recurring amounts, refund",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 500,
+        "n_documents": 75,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT"
+        ],
+        "timezone": "Asia/Tashkent",
+        "errors": {},
+        "scenarios": {},
+        "distractors": {
+          "recurring_amount": 3,
+          "refund": 1
+        }
+      }
+    },
+    {
+      "split": "dev",
+      "name": "dev-02",
+      "seed": 72000002,
+      "note": "clean; look-alikes: boundary, overpayments, split payment",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 700,
+        "n_documents": 100,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT",
+          "EUR"
+        ],
+        "timezone": "America/Lima",
+        "errors": {},
+        "scenarios": {},
+        "distractors": {
+          "boundary": 6,
+          "overpayment": 2,
+          "split_payment": 1
+        }
+      }
+    },
+    {
+      "split": "dev",
+      "name": "dev-03",
+      "seed": 72000003,
+      "note": "duplicate_invoice next to recurring amounts, JPY",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 600,
+        "n_documents": 90,
+        "base_currency": "USD",
+        "currencies": [
+          "USD",
+          "JPY"
+        ],
+        "timezone": "Asia/Tokyo",
+        "errors": {
+          "duplicate_invoice": 1
+        },
+        "scenarios": {},
+        "distractors": {
+          "recurring_amount": 2
+        }
+      }
+    },
+    {
+      "split": "dev",
+      "name": "dev-04",
+      "seed": 72000004,
+      "note": "unallocated_payment missing x2 next to advances and a refund",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 600,
+        "n_documents": 90,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT"
+        ],
+        "timezone": "Asia/Almaty",
+        "errors": {
+          "unallocated_payment": {
+            "missing": 2,
+            "partial": 0
+          }
+        },
+        "scenarios": {},
+        "distractors": {
+          "advance": 2,
+          "refund": 1
+        }
+      }
+    },
+    {
+      "split": "dev",
+      "name": "dev-05",
+      "seed": 72000005,
+      "note": "unallocated_payment partial x2 next to overpayments",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 700,
+        "n_documents": 100,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT",
+          "USD"
+        ],
+        "timezone": "America/Bogota",
+        "errors": {
+          "unallocated_payment": {
+            "missing": 0,
+            "partial": 2
+          }
+        },
+        "scenarios": {},
+        "distractors": {
+          "overpayment": 2,
+          "split_payment": 1
+        }
+      }
+    },
+    {
+      "split": "dev",
+      "name": "dev-06",
+      "seed": 72000006,
+      "note": "fx_error wrong_pair + wrong_date, three currencies",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 900,
+        "n_documents": 120,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT",
+          "USD",
+          "EUR"
+        ],
+        "timezone": "Asia/Almaty",
+        "errors": {
+          "fx_error": {
+            "wrong_date": 1,
+            "wrong_pair": 1
+          }
+        },
+        "scenarios": {},
+        "distractors": {
+          "boundary": 5
+        },
+        "rounding": "half_even"
+      }
+    },
+    {
+      "split": "dev",
+      "name": "dev-07",
+      "seed": 72000007,
+      "note": "cutoff_error early + late, UTC+5:30 company",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 600,
+        "n_documents": 90,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT",
+          "USD"
+        ],
+        "timezone": "Asia/Kolkata",
+        "errors": {
+          "cutoff_error": {
+            "late": 1,
+            "early": 1
+          }
+        },
+        "scenarios": {},
+        "distractors": {
+          "boundary": 8
+        }
+      }
+    },
+    {
+      "split": "dev",
+      "name": "dev-08",
+      "seed": 72000008,
+      "note": "scenario S1, KWD base",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 400,
+        "n_documents": 60,
+        "base_currency": "KWD",
+        "currencies": [
+          "KWD",
+          "USD"
+        ],
+        "timezone": "Asia/Dubai",
+        "errors": {},
+        "scenarios": {
+          "S1": 1
+        },
+        "distractors": {
+          "boundary": 3,
+          "overpayment": 1
+        }
+      }
+    },
+    {
+      "split": "dev",
+      "name": "dev-09",
+      "seed": 72000009,
+      "note": "scenario S2, UTC company",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 800,
+        "n_documents": 110,
+        "base_currency": "KZT",
+        "currencies": [
+          "KZT",
+          "EUR"
+        ],
+        "timezone": "UTC",
+        "errors": {},
+        "scenarios": {
+          "S2": 1
+        },
+        "distractors": {
+          "recurring_amount": 2,
+          "boundary": 2
+        }
+      }
+    },
+    {
+      "split": "dev",
+      "name": "dev-10",
+      "seed": 72000010,
+      "note": "large: every type, S1, three currencies",
+      "team_config": {
+        "config_version": "1",
+        "n_ledger_rows": 1500,
+        "n_documents": 180,
+        "base_currency": "USD",
+        "currencies": [
+          "USD",
+          "EUR",
+          "JPY"
+        ],
+        "timezone": "Asia/Shanghai",
+        "errors": {
+          "duplicate_invoice": 1,
+          "unallocated_payment": {
+            "missing": 1,
+            "partial": 0
+          },
+          "fx_error": {
+            "wrong_date": 0,
+            "wrong_pair": 1
+          },
+          "cutoff_error": {
+            "late": 1,
+            "early": 0
+          }
+        },
+        "scenarios": {
+          "S1": 1
+        },
+        "distractors": {
+          "split_payment": 2,
+          "advance": 1,
+          "recurring_amount": 1
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-50a074d6",
+  "generator_version": "0.2.0",
+  "seed": 72000003,
+  "attempt": 0,
+  "team_config": {
+    "config_version": "1",
+    "n_ledger_rows": 600,
+    "n_documents": 90,
+    "base_currency": "USD",
+    "currencies": [
+      "USD",
+      "JPY"
+    ],
+    "timezone": "Asia/Tokyo",
+    "errors": {
+      "duplicate_invoice": 1,
+      "unallocated_payment": {
+        "missing": 0,
+        "partial": 0
+      },
+      "fx_error": {
+        "wrong_date": 0,
+        "wrong_pair": 0
+      },
+      "cutoff_error": {
+        "late": 0,
+        "early": 0
+      }
+    },
+    "scenarios": {
+      "S1": 0,
+      "S2": 0
+    },
+    "distractors": {
+      "split_payment": 0,
+      "refund": 0,
+      "recurring_amount": 2,
+      "boundary": 0,
+      "advance": 0,
+      "overpayment": 0
+    },
+    "rounding": "half_up",
+    "fx_rate_date": "document_date",
+    "period_start": "2026-07-01",
+    "period_months": 3
+  },
+  "injections": [
+    {
+      "issue_ids": [
+        "ISS-0001"
+      ],
+      "kind": "duplicate_invoice",
+      "variant": null,
+      "scenario": null,
+      "description": "Счёт за то же обязательство выставлен второй раз под новым номером",
+      "changes": [
+        {
+          "file": "invoices.jsonl",
+          "op": "add",
+          "key": "doc-e2629887",
+          "before": null,
+          "after": {
+            "doc_id": "doc-e2629887",
+            "invoice_id": "INV-3cf2df0e",
+            "entity_id": "cust-b1bf7360",
+            "issued_at": "2026-07-27T09:14:09+00:00",
+            "due_at": "2026-08-10T23:59:59+09:00",
+            "currency": "USD",
+            "total_minor": 1021130,
+            "line_items": [
+              {
+                "description": "Network setup",
+                "quantity": 11,
+                "unit_price_minor": 8605,
+                "amount_minor": 94655
+              },
+              {
+                "description": "Consulting hours",
+                "quantity": 11,
+                "unit_price_minor": 20100,
+                "amount_minor": 221100
+              },
+              {
+                "description": "Cloud hosting",
+                "quantity": 9,
+                "unit_price_minor": 78375,
+                "amount_minor": 705375
+              }
+            ],
+            "po_ref": "PO-902873",
+            "service_period": "2026-07"
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-e2d47ee0",
+          "before": null,
+          "after": {
+            "row_id": "row-e2d47ee0",
+            "timestamp": "2026-07-27T18:14:09+09:00",
+            "account": "AR",
+            "debit_minor": 1021130,
+            "credit_minor": 0,
+            "currency": "USD",
+            "entity_id": "cust-b1bf7360",
+            "invoice_id": "INV-3cf2df0e",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-d0e08e8e",
+          "before": null,
+          "after": {
+            "row_id": "row-d0e08e8e",
+            "timestamp": "2026-07-27T18:14:09+09:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 1021130,
+            "currency": "USD",
+            "entity_id": "cust-b1bf7360",
+            "invoice_id": "INV-3cf2df0e",
+            "payment_id": null
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C5",
+          "currency": "USD",
+          "delta_minor": 1021130
+        }
+      ]
+    }
+  ],
+  "distractors": [
+    {
+      "kind": "recurring_amount",
+      "ids": [
+        "doc-f3ac7acc",
+        "doc-2db1d68a",
+        "doc-2dc88f35",
+        "doc-ba7c9efe",
+        "doc-f6d96937"
+      ]
+    },
+    {
+      "kind": "recurring_amount",
+      "ids": [
+        "doc-72928df4",
+        "doc-da6cc594",
+        "doc-146f6442",
+        "doc-c0afdce8"
+      ]
+    }
+  ]
+}

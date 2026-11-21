@@ -1,0 +1,248 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-39921b47",
+  "generator_version": "0.2.0",
+  "seed": 71000008,
+  "attempt": 0,
+  "team_config": {
+    "config_version": "1",
+    "n_ledger_rows": 500,
+    "n_documents": 75,
+    "base_currency": "EUR",
+    "currencies": [
+      "EUR",
+      "JPY"
+    ],
+    "timezone": "Asia/Shanghai",
+    "errors": {
+      "duplicate_invoice": 0,
+      "unallocated_payment": {
+        "missing": 0,
+        "partial": 0
+      },
+      "fx_error": {
+        "wrong_date": 0,
+        "wrong_pair": 0
+      },
+      "cutoff_error": {
+        "late": 0,
+        "early": 0
+      }
+    },
+    "scenarios": {
+      "S1": 0,
+      "S2": 1
+    },
+    "distractors": {
+      "split_payment": 0,
+      "refund": 0,
+      "recurring_amount": 2,
+      "boundary": 0,
+      "advance": 0,
+      "overpayment": 0
+    },
+    "rounding": "half_even",
+    "fx_rate_date": "document_date",
+    "period_start": "2026-07-01",
+    "period_months": 3
+  },
+  "injections": [
+    {
+      "issue_ids": [
+        "ISS-0001",
+        "ISS-0002"
+      ],
+      "kind": "S2",
+      "variant": null,
+      "scenario": "S2",
+      "description": "Счёт выставлен второй раз, и копия пересчитана по курсу другой даты",
+      "changes": [
+        {
+          "file": "invoices.jsonl",
+          "op": "add",
+          "key": "doc-211b69e8",
+          "before": null,
+          "after": {
+            "doc_id": "doc-211b69e8",
+            "invoice_id": "INV-8d57a1bd",
+            "entity_id": "cust-5ef61fe1",
+            "issued_at": "2026-06-22T10:03:29+08:00",
+            "due_at": "2026-07-22T23:59:59+08:00",
+            "currency": "JPY",
+            "total_minor": 1770600,
+            "line_items": [
+              {
+                "description": "Network setup",
+                "quantity": 3,
+                "unit_price_minor": 210040,
+                "amount_minor": 630120
+              },
+              {
+                "description": "Report preparation",
+                "quantity": 8,
+                "unit_price_minor": 142560,
+                "amount_minor": 1140480
+              }
+            ],
+            "po_ref": "PO-228395",
+            "service_period": "2026-06"
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-0c517525",
+          "before": null,
+          "after": {
+            "row_id": "row-0c517525",
+            "timestamp": "2026-06-22T10:03:29+08:00",
+            "account": "AR",
+            "debit_minor": 1770600,
+            "credit_minor": 0,
+            "currency": "JPY",
+            "entity_id": "cust-5ef61fe1",
+            "invoice_id": "INV-8d57a1bd",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-4beb667b",
+          "before": null,
+          "after": {
+            "row_id": "row-4beb667b",
+            "timestamp": "2026-06-22T10:03:29+08:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 0,
+            "credit_minor": 1770600,
+            "currency": "JPY",
+            "entity_id": "cust-5ef61fe1",
+            "invoice_id": "INV-8d57a1bd",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-6c971097",
+          "before": null,
+          "after": {
+            "row_id": "row-6c971097",
+            "timestamp": "2026-06-22T10:03:29+08:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 1031321,
+            "credit_minor": 0,
+            "currency": "EUR",
+            "entity_id": "cust-5ef61fe1",
+            "invoice_id": "INV-8d57a1bd",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "add",
+          "key": "row-55eb77c6",
+          "before": null,
+          "after": {
+            "row_id": "row-55eb77c6",
+            "timestamp": "2026-06-22T10:03:29+08:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 1031321,
+            "currency": "EUR",
+            "entity_id": "cust-5ef61fe1",
+            "invoice_id": "INV-8d57a1bd",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-6c971097",
+          "before": {
+            "row_id": "row-6c971097",
+            "timestamp": "2026-06-22T10:03:29+08:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 1031321,
+            "credit_minor": 0,
+            "currency": "EUR",
+            "entity_id": "cust-5ef61fe1",
+            "invoice_id": "INV-8d57a1bd",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-6c971097",
+            "timestamp": "2026-06-22T10:03:29+08:00",
+            "account": "FX_CLEARING",
+            "debit_minor": 1013722,
+            "credit_minor": 0,
+            "currency": "EUR",
+            "entity_id": "cust-5ef61fe1",
+            "invoice_id": "INV-8d57a1bd",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-55eb77c6",
+          "before": {
+            "row_id": "row-55eb77c6",
+            "timestamp": "2026-06-22T10:03:29+08:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 1031321,
+            "currency": "EUR",
+            "entity_id": "cust-5ef61fe1",
+            "invoice_id": "INV-8d57a1bd",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-55eb77c6",
+            "timestamp": "2026-06-22T10:03:29+08:00",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 1013722,
+            "currency": "EUR",
+            "entity_id": "cust-5ef61fe1",
+            "invoice_id": "INV-8d57a1bd",
+            "payment_id": null
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C5",
+          "currency": "JPY",
+          "delta_minor": 1770600
+        },
+        {
+          "control": "C3",
+          "currency": "EUR",
+          "delta_minor": 17599
+        }
+      ]
+    }
+  ],
+  "distractors": [
+    {
+      "kind": "recurring_amount",
+      "ids": [
+        "doc-22b5c397",
+        "doc-40e50b17",
+        "doc-0d2fef50",
+        "doc-eefe8da9",
+        "doc-7eeca984"
+      ]
+    },
+    {
+      "kind": "recurring_amount",
+      "ids": [
+        "doc-962817ee",
+        "doc-1b6da4a1",
+        "doc-c3bf0fb9"
+      ]
+    }
+  ]
+}

@@ -24,7 +24,7 @@ RUN_FLAGS = --rm --network none \
 	--user $(RUN_USER) -e HOME=/tmp \
 	-v "$(REPORTS_DIR):/app/reports"
 
-.PHONY: help verify image shell test verify-local wheels-check wheels clean
+.PHONY: help verify image shell test verify-local wheels-check wheels clean episodes trajectories baselines
 
 help: ## List the targets
 	@echo "Targets:"
@@ -47,6 +47,15 @@ test: ## Run the test suite locally from .venv, no Docker
 
 verify-local: ## Run the verification program locally from .venv, no Docker
 	$(PYTHON) -m cookedbooks.verify
+
+episodes: ## Regenerate the open train/dev episodes from episodes/index.json
+	$(PYTHON) -m cookedbooks.runner.episodes
+
+trajectories: ## Rebuild trajectories.jsonl (baselines in train mode on the train episodes)
+	$(PYTHON) -m cookedbooks.runner.trajectories
+
+baselines: ## Print the baseline diagnostics tables (dev and train, closed mode), no test suite
+	$(PYTHON) -m cookedbooks.runner.diagnostics
 
 wheels-check: ## Check that vendor/wheels holds exactly the universal wheels pinned in requirements.lock
 	$(HOST_PYTHON) -m cookedbooks.verify --check-wheels

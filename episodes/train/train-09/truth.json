@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-79e173b4",
+  "issues": [
+    {
+      "issue_id": "ISS-0001",
+      "type": "duplicate_invoice",
+      "affected_ids": [
+        "doc-00cb7410",
+        "doc-2eabeef0"
+      ],
+      "expected_amount_minor": 2944320,
+      "currency": "KWD",
+      "evidence_sets": [
+        [
+          "doc-00cb7410",
+          "doc-2eabeef0"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0002",
+      "type": "unallocated_payment",
+      "affected_ids": [
+        "doc-303011c4",
+        "doc-9efa292d"
+      ],
+      "expected_amount_minor": 621025,
+      "currency": "KWD",
+      "evidence_sets": [
+        [
+          "doc-303011c4",
+          "doc-9efa292d"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0003",
+      "type": "fx_error",
+      "affected_ids": [
+        "doc-244a9614"
+      ],
+      "expected_amount_minor": 448978,
+      "currency": "KWD",
+      "evidence_sets": [
+        [
+          "doc-244a9614",
+          "row-ab4b8995",
+          "2026-08-17:USD:KWD"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0004",
+      "type": "cutoff_error",
+      "affected_ids": [
+        "doc-2e5d58ea"
+      ],
+      "expected_amount_minor": 1837015,
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "doc-2e5d58ea",
+          "row-4668c2e8"
+        ],
+        [
+          "doc-2e5d58ea",
+          "row-2c041ed8"
+        ]
+      ]
+    }
+  ]
+}

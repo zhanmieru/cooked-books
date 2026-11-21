@@ -1,0 +1,223 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-bb34bf37",
+  "generator_version": "0.2.0",
+  "seed": 71000005,
+  "attempt": 0,
+  "team_config": {
+    "config_version": "1",
+    "n_ledger_rows": 500,
+    "n_documents": 75,
+    "base_currency": "KZT",
+    "currencies": [
+      "KZT",
+      "USD",
+      "EUR"
+    ],
+    "timezone": "Asia/Kolkata",
+    "errors": {
+      "duplicate_invoice": 0,
+      "unallocated_payment": {
+        "missing": 0,
+        "partial": 0
+      },
+      "fx_error": {
+        "wrong_date": 1,
+        "wrong_pair": 1
+      },
+      "cutoff_error": {
+        "late": 0,
+        "early": 0
+      }
+    },
+    "scenarios": {
+      "S1": 0,
+      "S2": 0
+    },
+    "distractors": {
+      "split_payment": 0,
+      "refund": 0,
+      "recurring_amount": 0,
+      "boundary": 4,
+      "advance": 0,
+      "overpayment": 0
+    },
+    "rounding": "half_up",
+    "fx_rate_date": "document_date",
+    "period_start": "2026-07-01",
+    "period_months": 3
+  },
+  "injections": [
+    {
+      "issue_ids": [
+        "ISS-0001"
+      ],
+      "kind": "fx_error",
+      "variant": "wrong_date",
+      "scenario": null,
+      "description": "Валютный счёт пересчитан по курсу другой даты",
+      "changes": [
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-d2de4b2a",
+          "before": {
+            "row_id": "row-d2de4b2a",
+            "timestamp": "2026-07-24T01:38:34+05:30",
+            "account": "FX_CLEARING",
+            "debit_minor": 118146844,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-b6db5276",
+            "invoice_id": "INV-faf2c26b",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-d2de4b2a",
+            "timestamp": "2026-07-24T01:38:34+05:30",
+            "account": "FX_CLEARING",
+            "debit_minor": 120000048,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-b6db5276",
+            "invoice_id": "INV-faf2c26b",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-663d20c4",
+          "before": {
+            "row_id": "row-663d20c4",
+            "timestamp": "2026-07-24T01:38:34+05:30",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 118146844,
+            "currency": "KZT",
+            "entity_id": "cust-b6db5276",
+            "invoice_id": "INV-faf2c26b",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-663d20c4",
+            "timestamp": "2026-07-24T01:38:34+05:30",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 120000048,
+            "currency": "KZT",
+            "entity_id": "cust-b6db5276",
+            "invoice_id": "INV-faf2c26b",
+            "payment_id": null
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C3",
+          "currency": "KZT",
+          "delta_minor": 1853204
+        }
+      ]
+    },
+    {
+      "issue_ids": [
+        "ISS-0002"
+      ],
+      "kind": "fx_error",
+      "variant": "wrong_pair",
+      "scenario": null,
+      "description": "Валютный счёт пересчитан по курсу другой валютной пары",
+      "changes": [
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-29acf753",
+          "before": {
+            "row_id": "row-29acf753",
+            "timestamp": "2026-07-06T11:01:11+05:30",
+            "account": "FX_CLEARING",
+            "debit_minor": 440886783,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-34adeb23",
+            "invoice_id": "INV-0fabb29e",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-29acf753",
+            "timestamp": "2026-07-06T11:01:11+05:30",
+            "account": "FX_CLEARING",
+            "debit_minor": 378240672,
+            "credit_minor": 0,
+            "currency": "KZT",
+            "entity_id": "cust-34adeb23",
+            "invoice_id": "INV-0fabb29e",
+            "payment_id": null
+          }
+        },
+        {
+          "file": "ledger.csv",
+          "op": "modify",
+          "key": "row-adad4173",
+          "before": {
+            "row_id": "row-adad4173",
+            "timestamp": "2026-07-06T11:01:11+05:30",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 440886783,
+            "currency": "KZT",
+            "entity_id": "cust-34adeb23",
+            "invoice_id": "INV-0fabb29e",
+            "payment_id": null
+          },
+          "after": {
+            "row_id": "row-adad4173",
+            "timestamp": "2026-07-06T11:01:11+05:30",
+            "account": "REVENUE",
+            "debit_minor": 0,
+            "credit_minor": 378240672,
+            "currency": "KZT",
+            "entity_id": "cust-34adeb23",
+            "invoice_id": "INV-0fabb29e",
+            "payment_id": null
+          }
+        }
+      ],
+      "effects": [
+        {
+          "control": "C3",
+          "currency": "KZT",
+          "delta_minor": 62646111
+        }
+      ]
+    }
+  ],
+  "distractors": [
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-ba1715f4",
+        "doc-15a47277"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-1a8bdfb2"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-d4476ccf"
+      ]
+    },
+    {
+      "kind": "boundary",
+      "ids": [
+        "doc-14c6a1bf"
+      ]
+    }
+  ]
+}

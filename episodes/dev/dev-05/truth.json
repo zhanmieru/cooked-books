@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "ep-22170518",
+  "issues": [
+    {
+      "issue_id": "ISS-0001",
+      "type": "unallocated_payment",
+      "affected_ids": [
+        "doc-04ec7cc5",
+        "doc-b3e8d835"
+      ],
+      "expected_amount_minor": 13150704,
+      "currency": "KZT",
+      "evidence_sets": [
+        [
+          "doc-04ec7cc5",
+          "doc-b3e8d835"
+        ]
+      ]
+    },
+    {
+      "issue_id": "ISS-0002",
+      "type": "unallocated_payment",
+      "affected_ids": [
+        "doc-1c8d6c79",
+        "doc-44a84563"
+      ],
+      "expected_amount_minor": 298162760,
+      "currency": "KZT",
+      "evidence_sets": [
+        [
+          "doc-1c8d6c79",
+          "doc-44a84563"
+        ]
+      ]
+    }
+  ]
+}
