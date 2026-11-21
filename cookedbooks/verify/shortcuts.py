@@ -3,10 +3,13 @@
     python -m cookedbooks.verify.shortcuts [--seeds N]
 
 Generates episodes through the public entry point (`judge_adapter.generate_episode`)
-from every recipe in `configs/matrix` that asks for errors, plus one mixed
-config, and reads them back the way a policy would: only the public files
-(through `cookedbooks.episode.loader.load_public`). `truth.json` is read only
-to score each feature. Nothing here looks at the generator's internals.
+from every recipe in `configs/matrix` that asks for errors or scenarios (found
+by globbing, so a new recipe is measured as soon as its file exists), plus two
+mixed configs, and reads them back the way a policy would: only the public
+files (through `cookedbooks.episode.loader.load_public`). `truth.json` is read
+only to score each feature. Nothing here looks at the generator's internals.
+A config whose generation raises NotImplementedError (an injector that is not
+written yet) is skipped and listed as skipped in the output.
 
 For every feature it prints how many documents the feature flags, how many of
 those are in a truth issue (`affected_ids`), the precision, and the lift:
@@ -15,8 +18,9 @@ documents of the same kind (invoices or payments).
 
 Two groups of features:
 - "trivial": surface properties a lazy policy might use instead of the rules
-  (customer size, timing, file position, ID shape, payment shape). None of
-  these should predict errors well.
+  (customer size, timing, file position, ID shape, payment shape, posting
+  delay, a naive reading of dates and rates). None of these should predict
+  errors well.
 - "rule": a piece of the DESIGN.md rule itself (an invoice still open that a
   payment references, a shared obligation key). High precision is expected
   and fine: that is the auditing the task asks for.
@@ -31,6 +35,7 @@ import sys
 import tempfile
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from decimal import Decimal
 from fractions import Fraction
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -45,17 +50,28 @@ MIX_CONFIG = {
     "distractors": {"split_payment": 3, "advance": 3, "refund": 2, "recurring_amount": 2, "boundary": 4,
                     "overpayment": 3},
 }
+# The error kinds of the second generator stage: measured once their injectors exist.
+MIX_FX_CUTOFF_CONFIG = {
+    "currencies": ["KZT", "USD", "EUR"], "n_ledger_rows": 1200, "n_documents": 160,
+    "errors": {"fx_error": {"wrong_date": 1, "wrong_pair": 1}, "cutoff_error": {"late": 1, "early": 1}},
+    "scenarios": {"S1": 1, "S2": 1},
+    "distractors": {"split_payment": 2, "advance": 2, "recurring_amount": 2, "boundary": 6, "overpayment": 2},
+}
 ADVANCE_SHARE_THRESHOLD = 20  # percent of a payment left in CUSTOMER_ADVANCES
+POSTING_DELAY_DAYS = 2  # "posted more than 2 days after issued_at"
+RATE_WINDOW_DAYS = 3  # "matches no table rate within +-3 days"
+FAR_FACTOR = 2  # "base amount more than 2x away from the customer's other invoices"
 
 
 def default_configs() -> dict[str, dict]:
-    """Every recipe that asks for at least one error, plus the mixed config."""
+    """Every recipe that asks for at least one error or scenario, plus the mixed configs."""
     configs = {}
     for path in sorted(MATRIX.glob("D*.json")):
         config = json.loads(path.read_text(encoding="utf-8"))
         if _requested(config):
             configs[path.stem] = config
     configs["mix"] = MIX_CONFIG
+    configs["mix-fx-cutoff"] = MIX_FX_CUTOFF_CONFIG
     return configs
 
 
@@ -89,9 +105,14 @@ class Episode:
     first: date
     last: date
     affected: set[str]
+    base: str = ""
+    exponents: dict = field(default_factory=dict)  # currency -> minor-unit exponent
     ar_credit: Counter = field(default_factory=Counter)  # invoice_id -> sum of Cr AR rows
     credits: dict = field(default_factory=lambda: defaultdict(Counter))  # payment_id -> account -> credit
     customer_of: dict = field(default_factory=dict)  # payment_id -> entity_id
+    posted_at: dict = field(default_factory=dict)  # invoice_id -> time of its posting (rows without payment_id)
+    revenue: Counter = field(default_factory=Counter)  # invoice_id -> credit of its REVENUE row(s), base currency
+    rates: dict = field(default_factory=lambda: defaultdict(dict))  # (source, target) -> date -> Fraction
 
     @classmethod
     def load(cls, folder: Path) -> "Episode":
@@ -108,9 +129,18 @@ class Episode:
             first=_instant(manifest["period_start"]).astimezone(zone).date(),
             last=_instant(manifest["period_end"]).astimezone(zone).date(),
             affected={doc for issue in issues for doc in issue.get("affected_ids", [])},
+            base=manifest["base_currency"], exponents=dict(manifest["currency_exponents"]),
         )
+        for rate in public.tables["fx"]:
+            episode.rates[(rate["source_currency"], rate["target_currency"])][date.fromisoformat(rate["date"])] = \
+                Fraction(Decimal(rate["rate"]))
         for row in episode.ledger:
             if row["payment_id"] is None:
+                if row["invoice_id"] is not None:
+                    at = _instant(row["timestamp"])
+                    episode.posted_at[row["invoice_id"]] = min(at, episode.posted_at.get(row["invoice_id"], at))
+                    if row["account"] == "REVENUE":
+                        episode.revenue[row["invoice_id"]] += row["credit_minor"] - row["debit_minor"]
                 continue
             episode.customer_of[row["payment_id"]] = row["entity_id"]
             if row["credit_minor"]:
@@ -130,6 +160,26 @@ class Episode:
 
     def open_balance(self, invoice: dict) -> int:
         return invoice["total_minor"] - self.ar_credit[invoice["invoice_id"]]
+
+    def side(self, day: date) -> int:
+        """-1 before the period, 0 inside it, 1 after it."""
+        return -1 if day < self.first else (1 if day > self.last else 0)
+
+    def rate_on(self, source: str, day: date) -> Fraction | None:
+        """Table rate source -> base on `day`, else the latest earlier date (policy: previous_available)."""
+        table = self.rates.get((source, self.base), {})
+        earlier = [d for d in table if d <= day]
+        return table[max(earlier)] if earlier else None
+
+    def converted(self, invoice: dict, rate: Fraction) -> Fraction:
+        """invoice total in base minor units at `rate` (unrounded)."""
+        shift = self.exponents[self.base] - self.exponents[invoice["currency"]]
+        return invoice["total_minor"] * rate * Fraction(10) ** shift
+
+
+def _differs(posted: int, expected: Fraction) -> bool:
+    """More than one minor unit apart: a lazy check that ignores the rounding mode."""
+    return abs(posted - expected) > 1
 
 
 # --- features --------------------------------------------------------------------
@@ -157,6 +207,10 @@ def invoice_features(ep: Episode) -> Iterable[tuple[Feature, dict]]:
             referenced_open.add(ref)
     position = {i["doc_id"]: n for n, i in enumerate(ep.invoices)}
     end_cut = ep.last - timedelta(days=10)
+    base_amounts = defaultdict(list)  # customer -> (doc_id, base amount) of every invoice
+    for inv in ep.invoices:
+        amount = inv["total_minor"] if inv["currency"] == ep.base else ep.revenue[inv["invoice_id"]]
+        base_amounts[inv["entity_id"]].append((inv["doc_id"], amount))
     for inv in ep.invoices:
         size = per_customer[inv["entity_id"]]
         day = ep.local_day(inv["issued_at"])
@@ -186,6 +240,8 @@ def invoice_features(ep: Episode) -> Iterable[tuple[Feature, dict]]:
             trivial["same-total group: no invoice paid"] = paid == 0
             trivial["same-total group: some but not all paid"] = 0 < paid < len(group)
             trivial["same-total group: all paid"] = paid == len(group)
+        trivial.update(_timing_features(ep, inv))
+        trivial.update(_fx_features(ep, inv, base_amounts[inv["entity_id"]]))
         for name, flag in trivial.items():
             if flag:
                 yield ("trivial", "invoice", name), inv
@@ -197,6 +253,46 @@ def invoice_features(ep: Episode) -> Iterable[tuple[Feature, dict]]:
         for name, flag in rule.items():
             if flag:
                 yield ("rule", "invoice", name), inv
+
+
+def _timing_features(ep: Episode, inv: dict) -> dict[str, bool]:
+    """Lazy period checks: posting delay and a UTC-date reading of the period bounds."""
+    issued = _instant(inv["issued_at"])
+    posted = ep.posted_at.get(inv["invoice_id"])
+    if posted is None:
+        return {}
+    utc_side = ep.side(issued.astimezone(timezone.utc).date()) != ep.side(posted.astimezone(timezone.utc).date())
+    return {
+        "posted earlier than issued_at": posted < issued,
+        f"posted more than {POSTING_DELAY_DAYS} days after issued_at": posted - issued > timedelta(
+            days=POSTING_DELAY_DAYS),
+        "issued_at and posting on different sides of a period bound by UTC date": utc_side,
+    }
+
+
+def _fx_features(ep: Episode, inv: dict, customer_amounts: list[tuple[str, int]]) -> dict[str, bool]:
+    """Lazy rate checks on a foreign invoice: the written date, a window of dates, the customer's usual size."""
+    if inv["currency"] == ep.base or inv["invoice_id"] not in ep.revenue:
+        return {}
+    posted = ep.revenue[inv["invoice_id"]]
+    written = date.fromisoformat(inv["issued_at"][:10])  # the date as written, whatever its offset
+    rate = ep.rate_on(inv["currency"], written)
+    local = ep.local_day(inv["issued_at"])
+    window = [ep.rates.get((inv["currency"], ep.base), {}).get(local + timedelta(days=k))
+              for k in range(-RATE_WINDOW_DAYS, RATE_WINDOW_DAYS + 1)]
+    window = [r for r in window if r is not None]
+    others = sorted(amount for doc, amount in customer_amounts if doc != inv["doc_id"])
+    features = {
+        "foreign: posted amount differs from the table rate of the written date":
+            rate is not None and _differs(posted, ep.converted(inv, rate)),
+        f"foreign: posted amount matches no table rate within +-{RATE_WINDOW_DAYS} days":
+            bool(window) and all(_differs(posted, ep.converted(inv, r)) for r in window),
+    }
+    if others:
+        median = others[len(others) // 2]
+        features[f"foreign: base amount over {FAR_FACTOR}x away from the customer's other invoices"] = (
+            posted > FAR_FACTOR * median or posted * FAR_FACTOR < median)
+    return features
 
 
 def payment_features(ep: Episode) -> Iterable[tuple[Feature, dict]]:
@@ -264,6 +360,7 @@ class Measurement:
     documents: Counter  # kind -> count
     affected: Counter  # kind -> affected count
     rows: list[Row]
+    skipped: dict[str, str] = field(default_factory=dict)  # config name -> NotImplementedError message
 
     def row(self, name: str, kind: str | None = None) -> Row:
         return next(r for r in self.rows if r.name == name and (kind is None or r.kind == kind))
@@ -282,13 +379,18 @@ def measure(seeds: int = DEFAULT_SEEDS, configs: dict[str, dict] | None = None,
     documents: Counter = Counter()
     affected: Counter = Counter()
     episodes = 0
+    skipped: dict[str, str] = {}
     root = Path(tempfile.mkdtemp(prefix="cookedbooks-shortcuts-"))
     try:
         for name, config in configs.items():
             for seed in range(seeds):
                 folder = root / "episode"
                 shutil.rmtree(folder, ignore_errors=True)
-                generate(seed, config, str(folder))
+                try:
+                    generate(seed, config, str(folder))
+                except NotImplementedError as missing:
+                    skipped[name] = str(missing)
+                    break
                 ep = Episode.load(folder)
                 episodes += 1
                 for kind, records in (("invoice", ep.invoices), ("payment", ep.payments)):
@@ -309,7 +411,7 @@ def measure(seeds: int = DEFAULT_SEEDS, configs: dict[str, dict] | None = None,
                         precision / rate_all if rate_all else Fraction(0),
                         precision / rate_kind if rate_kind else Fraction(0)))
     rows.sort(key=lambda r: (r.group != "trivial", -r.precision, r.kind, r.name))
-    return Measurement(episodes, documents, affected, rows)
+    return Measurement(episodes, documents, affected, rows, skipped)
 
 
 def render(m: Measurement) -> str:
@@ -320,12 +422,15 @@ def render(m: Measurement) -> str:
         f"invoices {m.affected['invoice']}/{m.documents['invoice']}, "
         f"payments {m.affected['payment']}/{m.documents['payment']})",
         "",
-        f"{'group':8s} {'kind':8s} {'feature':62s} {'flagged':>8s} {'in issue':>9s} {'precision':>10s} "
+        f"{'group':8s} {'kind':8s} {'feature':72s} {'flagged':>8s} {'in issue':>9s} {'precision':>10s} "
         f"{'lift':>6s} {'lift/kind':>9s}",
     ]
     for r in m.rows:
-        lines.append(f"{r.group:8s} {r.kind:8s} {r.name:62s} {r.flagged:8d} {r.hits:9d} "
+        lines.append(f"{r.group:8s} {r.kind:8s} {r.name:72s} {r.flagged:8d} {r.hits:9d} "
                      f"{_show(r.precision, 3):>10s} {_show(r.lift_all, 1):>6s} {_show(r.lift_kind, 1):>9s}")
+    if m.skipped:
+        lines += ["", "skipped (generator raised NotImplementedError):"]
+        lines += [f"  {name}: {message}" for name, message in sorted(m.skipped.items())]
     return "\n".join(lines)
 
 
