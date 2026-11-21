@@ -213,7 +213,7 @@ def score_episode(episode_dir: str, findings: dict, inspection_steps: int) -> di
 {"task": "…", "manifest": {}, "policy": {}, "remaining_steps": 100}
 ```
 
-`task` — строка. В ней: что нужно сдать, четыре значения `type`, какие ID канонические для `affected_ids`, формула пересчёта валют, допуск суммы, лимиты ответа. `info` — пустой объект.
+`task` — строка на английском, около 8 000 символов. В ней полный свод правил: действия, как читать время и суммы, как найти проводку счёта и строки платежа, условие каждой из четырёх ошибок с записями, суммой и доказательствами, перечень корректных двойников, формат и лимиты ответа, бюджеты. Этого текста и открытых записей достаточно, чтобы решить любой эпизод. `info` — пустой объект.
 
 ### step(action) → (observation, reward, terminated, truncated, info)
 
@@ -402,14 +402,29 @@ return = clip(2*F1 - 1 - 0.002*inspection_steps, -1, 1)
 |---|---|---|
 | `row_id` | `ledger.csv` | `truth.evidence_sets`, `provenance…key`, записи в `before`/`after` |
 | `doc_id` | `invoices.jsonl`, `payments.jsonl` | `truth.affected_ids`, `truth.evidence_sets`, `provenance…key`, `provenance.distractors[].ids`, `before`/`after` |
-| `invoice_id` | `invoices.jsonl` | `ledger.invoice_id`, `payments.invoice_refs`, `before`/`after` |
-| `payment_id` | `payments.jsonl` | `ledger.payment_id`, `before`/`after` |
-| `entity_id` | `invoices.jsonl`, `ledger.csv` | `before`/`after` |
+| `invoice_id` | `invoices.jsonl` | `ledger.invoice_id`, `payments.invoice_refs`, `before`/`after`; может встретиться в `evidence_ids` ответа |
+| `payment_id` | `payments.jsonl` | `ledger.payment_id`, `before`/`after`; может встретиться в `evidence_ids` ответа |
+| `entity_id` | нигде отдельно не определяется | `invoices.entity_id`, `ledger.entity_id`, `before`/`after` |
 | `issue_id` | `truth.json` | `provenance.injections[].issue_ids` |
 
-Не являются ID и не заменяются: ключ `fx` (`date:SRC:TGT`), `episode_id`, `po_ref`, `service_period`, названия счетов учёта.
+Поля с ID в записях `before`/`after` те же, что в самих файлах: в книге — `row_id`, `entity_id`, `invoice_id`, `payment_id`; в счёте — `doc_id`, `invoice_id`, `entity_id`; в платеже — `doc_id`, `payment_id`, `invoice_refs`. Поле `key` — это `row_id` для `ledger.csv` и `doc_id` для обоих файлов документов.
 
-Безопасно переставлять: строки `ledger.csv`, `invoices.jsonl`, `payments.jsonl`, `fx.csv`. Нельзя переставлять `line_items` внутри счёта.
+К какому пространству относится ID в наборе доказательств, определяется поиском по открытым файлам: в самом списке пространство не указано.
+
+Не являются ID и не заменяются: ключ `fx` (`date:SRC:TGT`), `episode_id`, `po_ref`, `service_period`, названия счетов учёта, коды валют, `line_items[].description`, а в `provenance.json` — `description`, `kind`, `variant`, `scenario`, `effects`, `team_config`, `seed`.
+
+Безопасно переставлять: строки `ledger.csv`, `invoices.jsonl`, `payments.jsonl`, `fx.csv`. Нельзя переставлять `line_items` внутри счёта. Перестановка `fx.csv` безопасна, пока ключи курсов не повторяются; генератор повторов не создаёт.
+
+После замены ID oracle перечисляет выводы в порядке новых `issue_id`, поэтому ответы oracle на двух папках нужно сравнивать как наборы, а не по порядку.
+
+**Ограничение: ID из разных пространств не должны совпадать.** В ответе агента и в аргументе `get_record` ID — это просто строка, пространство в ней не записано. В наших эпизодах каждая строка встречается только в одном пространстве. Если при замене ID дать, например, строке книги и документу один и тот же новый ID, то:
+
+- `get_record("invoices", x)` для `x`, который совпал с `doc_id` другого счёта, вернёт тот другой счёт;
+- в наборе доказательств запись одного пространства станет неотличима от записи другого, и неверный ответ может сопоставиться.
+
+Ответ oracle и ответы, перенесённые через ту же замену, оцениваются одинаково и в этом случае. Оба эффекта воспроизводятся тестами в `tests/integration/test_known_limits.py`.
+
+Наш инструмент: `python -m cookedbooks.verify.transform SRC DST [--permute] [--relabel] [--seed N] [--style hex|int|awkward|shuffle] [--mapping FILE]`.
 
 ## 8. Настройки генератора: `team_config`
 

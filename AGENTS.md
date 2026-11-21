@@ -31,6 +31,10 @@ make verify
 - Test dependencies are `pytest` and `hypothesis` only, pinned in `requirements.lock`, with wheels in `vendor/wheels/` so the container builds offline. Every vendored wheel is universal (`py3-none-any`), so it installs on any CPU architecture; `make wheels-check` enforces this. Do not add a dependency that ships compiled code. This is why `jsonschema` is not used (it pulls in `rpds-py`) and why `hypothesis` is pinned to 6.155.7, the last pure-Python release.
 - `python -m cookedbooks.verifier <episode_dir>` runs the independent verifier on one episode folder and prints why it is accepted or rejected.
 - `python -m cookedbooks.verify.shortcuts --seeds 60` measures how well trivial features predict injected errors. Run it after any change to the generator or an injector.
+- `python -m cookedbooks.verify.attacks --seeds 5` runs the reward-attack catalogue on generated episodes.
+- `python -m cookedbooks.verify.transform SRC DST --permute --relabel --style int` makes a reordered, relabelled copy of an episode folder.
+- `python -m cookedbooks.runner.run --policy NAME --episode DIR --mode closed|train` runs one policy in a separate process. `make baselines` prints the policy table.
+- `episodes/` and `trajectories.jsonl` are generated artefacts that are committed. After any change to the generator run `make episodes`; after any change to the environment output, the task text or a policy run `make trajectories`. Tests compare the committed files with a fresh build.
 
 ## Hard rules
 
