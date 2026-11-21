@@ -1,0 +1,11 @@
+{
+  "config_version": "1",
+  "n_ledger_rows": 600,
+  "n_documents": 90,
+  "base_currency": "KZT",
+  "currencies": ["KZT", "USD"],
+  "timezone": "Asia/Almaty",
+  "errors": {"fx_error": {"wrong_date": 2, "wrong_pair": 0}},
+  "scenarios": {},
+  "distractors": {"boundary": 6, "split_payment": 1}
+}

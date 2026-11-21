@@ -57,59 +57,71 @@ def copy_dates(world: World, original: Invoice) -> list[date]:
     return others or candidates or [world.timeline.local_date(original.issued_utc)]
 
 
+def pay_copy(ctx: ApplyContext, invoice: Invoice, after: int) -> None:
+    """One payment allocated in full to `invoice`, timed like a regular payment."""
+    world, rng, tl = ctx.world, ctx.rng, ctx.world.timeline
+    ts = tl.payment_time(rng, after)
+    if ts is None:
+        raise AssertionError("no room in the window for the copy's payment")
+    payment = Payment(ref=world.new_ref("P"), customer=invoice.customer, ts_utc=ts,
+                      ts_offset=tl.written_offset(rng, ts), currency=invoice.currency,
+                      amount_minor=invoice.total_minor, invoice_refs=(invoice.ref,))
+    ctx.recorder.add("payments", payment)
+    ctx.recorder.add_all("ledger", payment_posting(world, payment, [(invoice.ref, invoice.total_minor)]))
+
+
+def duplicate_plan(ctx: PlanContext, currency: str, *, min_base_minor: int = 0) -> InjectionPlan:
+    """Reserve the original (a pool customer's regular invoice) and size the copy's footprint."""
+    paid = "full" if chance(ctx.rng, PAID_PERCENT) else "none"
+    copy_paid = chance(ctx.rng, PAID_PERCENT)
+    rows = (2 if currency == ctx.base_currency else 4) + (2 if copy_paid else 0)
+    return InjectionPlan(footprint=Footprint(documents=2 if copy_paid else 1, ledger_rows=rows),
+                         reserve=(ReserveSpec(currency=currency, paid=paid, timing="regular",
+                                              customer="pool", min_base_minor=min_base_minor),),
+                         params={"currency": currency, "paid": paid, "copy_paid": copy_paid})
+
+
+def add_copy(ctx: ApplyContext) -> tuple[Invoice, Invoice]:
+    """Add the copy of the reserved original with its own correct posting (and payment); (original, copy)."""
+    world, rng, tl = ctx.world, ctx.rng, ctx.world.timeline
+    original = world.invoices[ctx.targets[0].invoice]
+    if original.po_ref is None or original.service_period is None:
+        raise AssertionError("a reserved invoice always has a po_ref and a service_period")
+    issued = tl.time_on(rng, copy_dates(world, original))
+    copy = dataclasses.replace(
+        original, ref=world.new_ref("I"), issued_utc=issued,
+        issued_offset=tl.written_offset(rng, issued), due_utc=draw_due_utc(world, rng, issued),
+        due_offset=tl.offset,
+    )
+    posted = tl.regular_posting_time(rng, issued)
+    rows = invoice_posting(world, copy, posted)
+    if len(rows) != invoice_rows(world, copy.currency) or any(r.debit_minor + r.credit_minor <= 0 for r in rows):
+        raise AssertionError("the copy's posting does not have the planned shape")
+    ctx.recorder.add("invoices", copy)
+    ctx.recorder.add_all("ledger", rows)
+    if ctx.plan.params["copy_paid"]:
+        pay_copy(ctx, copy, max(issued, posted))
+    return original, copy
+
+
+def duplicate_issue(original: Invoice, copy: Invoice) -> tuple[IssueDraft, dict]:
+    """The truth issue and the C5 effect of a duplicate pair."""
+    pair: list[Ref] = [("invoice", original.ref), ("invoice", copy.ref)]
+    issue = IssueDraft(type=KIND, affected=list(pair), expected_amount_minor=copy.total_minor,
+                       currency=copy.currency, evidence_sets=[list(pair)])
+    return issue, {"control": "C5", "currency": copy.currency, "delta_minor": copy.total_minor}
+
+
 @register(KIND)
 class DuplicateInvoice:
     """Add a second invoice for an existing obligation, with its own correct posting."""
-
-    @staticmethod
-    def _pay(ctx: ApplyContext, invoice: Invoice, after: int) -> None:
-        """One payment allocated in full to `invoice`, timed like a regular payment."""
-        world, rng, tl = ctx.world, ctx.rng, ctx.world.timeline
-        ts = tl.payment_time(rng, after)
-        if ts is None:
-            raise AssertionError("no room in the window for the copy's payment")
-        payment = Payment(ref=world.new_ref("P"), customer=invoice.customer, ts_utc=ts,
-                          ts_offset=tl.written_offset(rng, ts), currency=invoice.currency,
-                          amount_minor=invoice.total_minor, invoice_refs=(invoice.ref,))
-        ctx.recorder.add("payments", payment)
-        ctx.recorder.add_all("ledger", payment_posting(world, payment, [(invoice.ref, invoice.total_minor)]))
 
     def plan(self, ctx: PlanContext) -> InjectionPlan:
         currency = ctx.base_currency
         if ctx.foreign_currencies and chance(ctx.rng, FOREIGN_PERCENT):
             currency = ctx.rng.choice(ctx.foreign_currencies)
-        paid = "full" if chance(ctx.rng, PAID_PERCENT) else "none"
-        copy_paid = chance(ctx.rng, PAID_PERCENT)
-        rows = (2 if currency == ctx.base_currency else 4) + (2 if copy_paid else 0)
-        return InjectionPlan(footprint=Footprint(documents=2 if copy_paid else 1, ledger_rows=rows),
-                             reserve=(ReserveSpec(currency=currency, paid=paid, timing="regular",
-                                                  customer="pool"),),
-                             params={"currency": currency, "paid": paid, "copy_paid": copy_paid})
+        return duplicate_plan(ctx, currency)
 
     def apply(self, ctx: ApplyContext) -> InjectionOutcome:
-        world, rng, tl = ctx.world, ctx.rng, ctx.world.timeline
-        original = world.invoices[ctx.targets[0].invoice]
-        if original.po_ref is None or original.service_period is None:
-            raise AssertionError("a reserved invoice always has a po_ref and a service_period")
-        issued = tl.time_on(rng, copy_dates(world, original))
-        copy = dataclasses.replace(
-            original, ref=world.new_ref("I"), issued_utc=issued,
-            issued_offset=tl.written_offset(rng, issued), due_utc=draw_due_utc(world, rng, issued),
-            due_offset=tl.offset,
-        )
-        posted = tl.regular_posting_time(rng, issued)
-        rows = invoice_posting(world, copy, posted)
-        if len(rows) != invoice_rows(world, copy.currency) or any(r.debit_minor + r.credit_minor <= 0 for r in rows):
-            raise AssertionError("the copy's posting does not have the planned shape")
-        ctx.recorder.add("invoices", copy)
-        ctx.recorder.add_all("ledger", rows)
-        if ctx.plan.params["copy_paid"]:
-            self._pay(ctx, copy, max(issued, posted))
-        pair: list[Ref] = [("invoice", original.ref), ("invoice", copy.ref)]
-        issue = IssueDraft(type=KIND, affected=list(pair), expected_amount_minor=copy.total_minor,
-                           currency=copy.currency, evidence_sets=[list(pair)])
-        return InjectionOutcome(
-            issues=[issue],
-            effects=[{"control": "C5", "currency": copy.currency, "delta_minor": copy.total_minor}],
-            description=DESCRIPTION, kind=KIND,
-        )
+        issue, effect = duplicate_issue(*add_copy(ctx))
+        return InjectionOutcome(issues=[issue], effects=[effect], description=DESCRIPTION, kind=KIND)

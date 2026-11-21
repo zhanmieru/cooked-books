@@ -103,7 +103,8 @@ def check_copy_is_ordinary(books: Books, original: dict, copy: dict) -> None:
     due = local_day(copy["due_at"], books.offset)
     assert (due - day).days in (14, 30, 45) and copy["due_at"].endswith("T23:59:59" + books.manifest["utc_offset"])
     posted = instant(books.posting[copy["invoice_id"]][0]["timestamp"])
-    assert 0 <= posted - instant(copy["issued_at"]) <= 3 * 86_400
+    # an ordinary delay: the issue instant, or 1-2 local days later or earlier (timeline.py)
+    assert abs((local_day(books.posting[copy["invoice_id"]][0]["timestamp"], books.offset) - day).days) <= 2
     assert books.in_period(posted) == books.in_period(instant(copy["issued_at"]))
     if copy["currency"] != books.base:
         revenue = next(r for r in books.posting[copy["invoice_id"]] if r["account"] == "REVENUE")

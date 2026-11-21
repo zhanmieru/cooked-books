@@ -212,10 +212,10 @@ def posting_time_of(world: World, invoice: Invoice) -> int:
 
 
 def pay_in_full(world: World, rng: random.Random, budget: Budget, invoice: Invoice, *,
-                max_days: int = 35, before: int | None = None) -> Payment | None:
-    """One payment allocated fully to `invoice`, after its posting (and strictly before `before`,
-    if given); None if the window has no room."""
-    after = max(invoice.issued_utc, posting_time_of(world, invoice))
+                max_days: int = 35, before: int | None = None, not_before: int = 0) -> Payment | None:
+    """One payment allocated fully to `invoice`, after its issue and posting (and `not_before`),
+    strictly before `before` if given; None if the window has no room."""
+    after = max(invoice.issued_utc, posting_time_of(world, invoice), not_before)
     ts = world.timeline.payment_time(rng, after, max_days=max_days, before=before)
     if ts is None:
         return None

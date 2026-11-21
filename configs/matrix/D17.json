@@ -1,0 +1,11 @@
+{
+  "config_version": "1",
+  "n_ledger_rows": 1200,
+  "n_documents": 150,
+  "base_currency": "EUR",
+  "currencies": ["EUR", "JPY", "KZT"],
+  "timezone": "Asia/Tokyo",
+  "rounding": "half_even",
+  "scenarios": {"S1": 1},
+  "distractors": {"boundary": 6, "overpayment": 2, "split_payment": 2, "advance": 1}
+}

@@ -23,7 +23,11 @@ before it.
 - recurring_amount: monthly invoices to one customer with the same lines,
   amount and po_ref, different service_period.
 - boundary: one invoice near a period bound or a date line, all correct by
-  policy (see BOUNDARY_SUBTYPES).
+  policy (see BOUNDARY_SUBTYPES). "delayed_posting" posts 1-2 days after or
+  before the issue day without crossing the bound, the look-alike of a
+  late or early cutoff_error. "date_line" (companies off UTC) issues and posts
+  on one local day next to the period end whose UTC dates straddle it: a check
+  that reads UTC dates instead of local ones sees a cut-off error there.
 """
 
 from __future__ import annotations
@@ -39,6 +43,8 @@ from cookedbooks.world.factory import (
 )
 from cookedbooks.world.model import Distractor, Invoice, World
 from cookedbooks.world.rng import chance
+from cookedbooks.world.timeline import BUSINESS_END, BUSINESS_START
+from cookedbooks.world.timeutil import DAY
 
 
 class GuardedCustomers(Protocol):
@@ -48,7 +54,8 @@ class GuardedCustomers(Protocol):
 
     def guard(self, customer: str, currency: str, instant: int) -> None: ...
 
-BOUNDARY_SUBTYPES = ("midnight_offset", "delayed_posting", "next_period", "weekend_rate")
+BOUNDARY_SUBTYPES = ("midnight_offset", "delayed_posting", "next_period", "weekend_rate", "date_line")
+MIDNIGHT_MID_PERIOD_PERCENT = 30  # midnight look-alikes on an ordinary mid-period day, as written-date fx errors
 _CHAIN_ROOM_DAYS = 30
 
 
@@ -184,19 +191,29 @@ def build_boundary(world: World, rng: random.Random, budget: Budget, customer: s
     if subtype != "weekend_rate":
         currency = pick_currency(world, rng, budget, invoices=1, other_docs=0, other_rows=0, foreign_percent=70)
     written = None
+    if subtype == "date_line" and tl.offset == 0:
+        subtype = "midnight_offset"  # a UTC company has no date line between its clock and UTC
     if subtype == "midnight_offset":
-        day = rng.choice([tl.last, tl.last + timedelta(days=1)] * 2
-                         + [tl.first - timedelta(days=1), tl.first])
+        if chance(rng, MIDNIGHT_MID_PERIOD_PERCENT):
+            day = rng.choice(tl.regular_dates)
+        else:
+            day = rng.choice([tl.last, tl.last + timedelta(days=1)] * 2
+                             + [tl.first - timedelta(days=1), tl.first])
         written = tl.alternative_offset(rng)
         issued = tl.midnight_time(rng, day, written)
         posting = tl.same_day_later(rng, issued)
+    elif subtype == "date_line":
+        issued, posting = _date_line_times(world, rng)
     elif subtype == "weekend_rate":
         issued = tl.time_on(rng, tl.weekend_dates)
         posting = tl.regular_posting_time(rng, issued)
     elif subtype == "delayed_posting":
+        # posted 1-2 days after or before the issue day, never across a bound
         day, delays = rng.choice([
             (tl.last - timedelta(days=2), (1, 2)), (tl.last - timedelta(days=1), (1,)),
             (tl.last - timedelta(days=2), (1, 2)), (tl.first, (1, 2)), (tl.first + timedelta(days=1), (1,)),
+            (tl.last + timedelta(days=2), (-1,)), (tl.last + timedelta(days=3), (-1, -2)),
+            (tl.first + timedelta(days=2), (-1, -2)),
         ])
         issued = tl.at(day, tl.business_second(rng))
         posting = tl.at(day + timedelta(days=rng.choice(delays)), tl.business_second(rng))
@@ -216,3 +233,26 @@ def build_boundary(world: World, rng: random.Random, budget: Budget, customer: s
         if payment is not None:
             docs.append(("payment", payment))
     return Distractor("boundary", _docs(*docs))
+
+
+def _date_line_times(world: World, rng: random.Random) -> tuple[int, int]:
+    """(issued, posting) on one local day next to the period end, on the same local side of it, whose
+    UTC dates fall on different sides: a period check that reads UTC dates sees a cut-off error.
+
+    East of UTC: issued on the first day after the period before local `offset` o'clock (UTC date: the
+    last day), posted later that day at business hours. West of UTC: issued on the last day after
+    local 24:00 - |offset| (UTC date: the next day), posted earlier that day at business hours.
+    """
+    tl = world.timeline
+    shift = abs(tl.offset) * 60
+    if tl.offset > 0:
+        day = tl.last + timedelta(days=1)
+        issued = tl.at(day, rng.randrange(0, shift))
+        low = max(BUSINESS_START, shift)
+        posting = tl.at(day, rng.randrange(low, BUSINESS_END)) if low < BUSINESS_END else issued
+    else:
+        day = tl.last
+        issued = tl.at(day, rng.randrange(DAY - shift, DAY))
+        high = min(BUSINESS_END, DAY - shift)
+        posting = tl.at(day, rng.randrange(BUSINESS_START, high)) if BUSINESS_START < high else issued
+    return issued, posting

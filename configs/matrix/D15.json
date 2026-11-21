@@ -1,0 +1,11 @@
+{
+  "config_version": "1",
+  "n_ledger_rows": 500,
+  "n_documents": 70,
+  "base_currency": "USD",
+  "currencies": ["USD", "EUR"],
+  "timezone": "Asia/Kolkata",
+  "errors": {"cutoff_error": {"late": 0, "early": 1}},
+  "scenarios": {},
+  "distractors": {"boundary": 6, "split_payment": 1}
+}

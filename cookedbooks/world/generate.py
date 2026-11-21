@@ -20,7 +20,7 @@ from cookedbooks.world.inject.base import (
 from cookedbooks.world.inject.recorder import ChangeRecorder
 from cookedbooks.world.inject.registry import resolve
 from cookedbooks.world.model import World
-from cookedbooks.world.rng import digest_hex, stream
+from cookedbooks.world.rng import config_salt, digest_hex, stream
 from cookedbooks.world.simulate import simulate
 from cookedbooks.world.timeline import Timeline
 
@@ -42,14 +42,16 @@ def expand_requests(config: WorldConfig) -> list[tuple[str, str | None, str | No
 
 def _resolve_all(config: WorldConfig, seed: int, attempt: int) -> list[tuple[InjectionRequest, Injector]]:
     resolved = []
+    salt = config_salt(config.generator_config)
     for index, (kind, variant, scenario) in enumerate(expand_requests(config)):
-        injector, chosen = resolve(kind, variant, stream(seed, attempt, f"variant:{index}"))
+        injector, chosen = resolve(kind, variant, stream(seed, attempt, f"{salt}:variant:{index}"))
         resolved.append((InjectionRequest(kind, chosen, scenario, index), injector))
     return resolved
 
 
-def _episode_id(seed: int, attempt: int, normalized: dict) -> str:
-    canonical = json.dumps(normalized, sort_keys=True, separators=(",", ":"))
+def _episode_id(seed: int, attempt: int, generator_config: dict) -> str:
+    """From the generator config, so configs that mean the same thing give the same episode."""
+    canonical = json.dumps(generator_config, sort_keys=True, separators=(",", ":"))
     return "ep-" + digest_hex(seed, attempt, "episode", canonical)[:8]
 
 
@@ -58,12 +60,13 @@ def build_world(seed: int, team_config: Any, *, attempt: int = 0
     """Everything up to export: the final world and the recorded injections."""
     config = parse_config(team_config)
     resolved = _resolve_all(config, seed, attempt)  # NotImplementedError before any work
+    salt = config_salt(config.generator_config)
     timeline = Timeline(config.period_first, config.period_last, config.utc_offset)
     plans: list[InjectionPlan] = []
     for request, injector in resolved:
         ctx = PlanContext(request=request, base_currency=config.base_currency,
                           foreign_currencies=config.foreign_currencies, timeline=timeline,
-                          rng=stream(seed, attempt, f"plan:{request.index}"))
+                          rng=stream(seed, attempt, f"{salt}:plan:{request.index}"))
         plans.append(injector.plan(ctx))
     world = simulate(config, seed, attempt, plans)
     applied: list[AppliedInjection] = []
@@ -72,7 +75,7 @@ def build_world(seed: int, team_config: Any, *, attempt: int = 0
         docs, rows = world.document_count(), world.row_count()
         outcome = injector.apply(ApplyContext(
             world=world, request=request, plan=plan, targets=world.reserved.get(request.index, ()),
-            recorder=recorder, rng=stream(seed, attempt, f"inject:{request.index}"),
+            recorder=recorder, rng=stream(seed, attempt, f"{salt}:inject:{request.index}"),
         ))
         delta = (world.document_count() - docs, world.row_count() - rows)
         declared = (plan.footprint.documents, plan.footprint.ledger_rows)
@@ -91,7 +94,7 @@ def generate_episode(seed: int, team_config: dict, output_dir: str | os.PathLike
         raise ValueError("attempt must be a non-negative int")
     config, world, applied = build_world(seed, team_config, attempt=attempt)
     meta = EpisodeMeta(
-        episode_id=_episode_id(seed, attempt, config.normalized), seed=seed, attempt=attempt,
+        episode_id=_episode_id(seed, attempt, config.generator_config), seed=seed, attempt=attempt,
         generator_version=GENERATOR_VERSION, timezone=config.timezone, team_config=config.normalized,
     )
     export_episode(world, applied, meta, output_dir)

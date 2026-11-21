@@ -94,13 +94,24 @@ CONFIG = {
 }
 
 
-def test_requested_kind_without_injector_is_not_implemented(tmp_path):
-    for config, name in (({"errors": {"fx_error": 1}}, "fx_error"),
-                         ({"errors": {"cutoff_error": {"late": 1}}}, "cutoff_error.late"),
-                         ({"scenarios": {"S2": 1}}, "S2")):
+def test_requested_kind_without_injector_is_not_implemented(tmp_path, monkeypatch):
+    """Every kind is registered now; with its injectors hidden, a request fails before any file is written."""
+    for key in [("fx_error", "wrong_date"), ("fx_error", "wrong_pair"), ("cutoff_error", "late"), ("S2", None)]:
+        monkeypatch.delitem(INJECTORS, key)
+    config = {"currencies": ["KZT", "USD"]}
+    for extra, name in (({"errors": {"fx_error": 1}}, "fx_error"),
+                        ({"errors": {"cutoff_error": {"late": 1}}}, "cutoff_error.late"),
+                        ({"scenarios": {"S2": 1}}, "S2")):
         with pytest.raises(NotImplementedError, match=name.replace(".", r"\.")):
-            generate_episode(1, config, tmp_path / "x")
+            generate_episode(1, {**config, **extra}, tmp_path / "x")
     assert not (tmp_path / "x").exists()
+
+
+def test_every_kind_and_variant_is_registered():
+    from cookedbooks.world.config import ERROR_VARIANTS, SCENARIOS
+
+    expected = {(k, v) for k, vs in ERROR_VARIANTS.items() for v in (vs or (None,))} | {(s, None) for s in SCENARIOS}
+    assert expected <= set(INJECTORS)
 
 
 def test_injected_episode(tmp_path, test_injectors, monkeypatch):
@@ -232,3 +243,91 @@ def test_timings_for_reserved_targets(tmp_path, monkeypatch):
             assert day.weekday() >= 5
         if timing == "midnight_offset":
             assert invoice.issued_offset != tl.offset
+
+
+# --- the config salt: configs that mean the same thing give the same books ----------
+
+BOOK_FILES = ("manifest.json", "ledger.csv", "invoices.jsonl", "payments.jsonl", "fx.csv", "policy.json",
+              "truth.json")
+SAME_MEANING = [
+    ({"currencies": ["KZT", "USD"]}, {"currencies": ["KZT", "USD"], "time_limit_s": 30, "config_version": "1"}),
+    ({}, {"n_ledger_rows": 600}),
+    ({}, {"n_documents": 90, "base_currency": "KZT", "currencies": ["KZT"], "timezone": "Asia/Almaty",
+          "rounding": "half_up", "fx_rate_date": "document_date", "period_start": "2026-07-01", "period_months": 3}),
+    ({}, {"errors": {"fx_error": 0, "cutoff_error": {}}, "scenarios": {"S1": 0}, "distractors": {"boundary": 0}}),
+    ({"currencies": ["KZT", "USD"], "errors": {"fx_error": {"wrong_date": 1}}},
+     {"currencies": ["KZT", "USD"], "errors": {"fx_error": {"wrong_date": 1, "wrong_pair": 0}}, "time_limit_s": 60}),
+]
+
+
+def _folder_bytes(folder) -> dict[str, bytes]:
+    return {name: (folder / name).read_bytes() for name in BOOK_FILES}
+
+
+@pytest.mark.parametrize("pair", range(len(SAME_MEANING)))
+def test_configs_with_the_same_meaning_give_identical_folders(tmp_path, pair):
+    a, b = SAME_MEANING[pair]
+    generate_episode(7, a, tmp_path / "a")
+    generate_episode(7, b, tmp_path / "b")
+    assert _folder_bytes(tmp_path / "a") == _folder_bytes(tmp_path / "b")
+    pa, pb = (json.loads((tmp_path / x / "provenance.json").read_text()) for x in ("a", "b"))
+    assert {k: v for k, v in pa.items() if k != "team_config"} == {k: v for k, v in pb.items() if k != "team_config"}
+
+
+BASE = {"currencies": ["KZT", "USD"], "errors": {"duplicate_invoice": 1}, "distractors": {"boundary": 2}}
+REAL_CHANGES = {
+    "a count": {"errors": {"duplicate_invoice": 2}},
+    "a look-alike count": {"distractors": {"boundary": 3}},
+    "a currency": {"currencies": ["KZT", "EUR"]},
+    "the base currency": {"base_currency": "USD", "currencies": ["USD", "KZT"]},
+    "the time zone": {"timezone": "Asia/Tokyo"},
+    "the period start": {"period_start": "2026-04-01"},
+    "the period length": {"period_months": 2},
+    "the ledger size": {"n_ledger_rows": 640},
+    "the document count": {"n_documents": 92},
+    "the rounding": {"rounding": "half_even"},
+}
+
+
+def test_bare_number_and_explicit_split_stay_distinct():
+    from cookedbooks.world.config import parse_config
+
+    from cookedbooks.world.rng import config_salt
+
+    bare = parse_config({"currencies": ["KZT", "USD"], "errors": {"fx_error": 1}}).generator_config
+    split = parse_config({"currencies": ["KZT", "USD"], "errors": {"fx_error": {"wrong_date": 1}}}).generator_config
+    assert bare != split and config_salt(bare) != config_salt(split)
+
+
+@pytest.mark.parametrize("change", sorted(REAL_CHANGES))
+def test_a_real_setting_changes_the_stream(tmp_path, change):
+    """Changing a generator setting changes the salt, so the books are drawn anew."""
+    from cookedbooks.world.config import parse_config
+    from cookedbooks.world.rng import config_salt
+
+    other = {**BASE, **REAL_CHANGES[change]}
+    assert config_salt(parse_config(BASE).generator_config) != config_salt(parse_config(other).generator_config)
+    generate_episode(7, BASE, tmp_path / "a")
+    generate_episode(7, other, tmp_path / "b")
+    assert (tmp_path / "a" / "ledger.csv").read_bytes() != (tmp_path / "b" / "ledger.csv").read_bytes()
+
+
+def test_same_seed_in_different_recipes_draws_different_numbers(tmp_path):
+    """Recipes run at the same seed are independent worlds: the S1 advances share of D16, D17 and D18
+    is not one number per seed (it was before the config salt, see the stream docstring in rng.py)."""
+    from pathlib import Path
+
+    matrix = Path(__file__).resolve().parents[2] / "configs" / "matrix"
+    differing = 0
+    for seed in range(6):
+        shares = set()
+        for recipe in ("D16", "D17", "D18"):
+            folder = tmp_path / f"{recipe}_{seed}"
+            generate_episode(seed, json.loads((matrix / f"{recipe}.json").read_text()), folder)
+            books = books_from_folder(folder)
+            truth = json.loads((folder / "truth.json").read_text())
+            issue = next(i for i in truth["issues"] if i["type"] == "unallocated_payment")
+            payment = next(p for p in books.payments if p["doc_id"] == issue["affected_ids"][0])
+            shares.add(issue["expected_amount_minor"] * 100 // payment["amount_minor"])
+        differing += len(shares) > 1
+    assert differing >= 4

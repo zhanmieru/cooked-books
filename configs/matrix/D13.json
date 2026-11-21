@@ -1,0 +1,12 @@
+{
+  "config_version": "1",
+  "n_ledger_rows": 900,
+  "n_documents": 120,
+  "base_currency": "KZT",
+  "currencies": ["KZT", "USD", "EUR"],
+  "timezone": "Asia/Tokyo",
+  "rounding": "half_even",
+  "errors": {"fx_error": {"wrong_date": 0, "wrong_pair": 2}},
+  "scenarios": {},
+  "distractors": {"boundary": 6, "recurring_amount": 1}
+}

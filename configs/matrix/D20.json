@@ -1,0 +1,11 @@
+{
+  "config_version": "1",
+  "n_ledger_rows": 2000,
+  "n_documents": 200,
+  "base_currency": "USD",
+  "currencies": ["USD", "JPY", "KZT"],
+  "timezone": "Asia/Shanghai",
+  "rounding": "half_even",
+  "scenarios": {"S2": 1},
+  "distractors": {"recurring_amount": 3, "boundary": 3, "split_payment": 1}
+}

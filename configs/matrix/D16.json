@@ -1,0 +1,10 @@
+{
+  "config_version": "1",
+  "n_ledger_rows": 600,
+  "n_documents": 90,
+  "base_currency": "KZT",
+  "currencies": ["KZT", "USD"],
+  "timezone": "Asia/Almaty",
+  "scenarios": {"S1": 1},
+  "distractors": {"boundary": 5, "overpayment": 1}
+}

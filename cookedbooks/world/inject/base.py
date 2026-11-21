@@ -37,6 +37,7 @@ Ref = tuple[str, str]
 TIMINGS = ("regular", "midnight_offset", "weekend", "near_end_inside", "near_end_outside")
 PAID = ("none", "full", "split")
 CUSTOMERS = ("own", "pool")
+BOUNDS = ("any", "end", "mid")
 
 
 @dataclass(frozen=True)
@@ -76,9 +77,21 @@ class ReserveSpec:
         invoice (null now and then).
     timing: "regular" (the regular distribution and posting delay),
         "midnight_offset" (near a period bound, written on another clock so the
-        written date differs from the local date), "weekend" (local Sat/Sun),
-        "near_end_inside" (last 2 days of the period), "near_end_outside"
-        (first 2 days after it). Non-regular timings post at the issue instant.
+        written date differs from the local date), "weekend" (local Sat/Sun,
+        regular posting delay), "near_end_inside" (last 2 days of the period),
+        "near_end_outside" (first 2 days after it). "midnight_offset" and the
+        near_end timings post at the issue instant.
+    bound: with "midnight_offset", "any" (either period bound), "end" (the
+        period end only) or "mid" (an ordinary mid-period weekday).
+    rate_shift: with "midnight_offset" and a foreign currency: the written
+        calendar date resolves to another fx row than the local date, so a
+        conversion by the written date is wrong (an fx_error target).
+    end_day: with a near_end timing, the issue day is period last day +
+        end_day (-1 or 0 inside, 1 or 2 outside); None draws one.
+    min_base_minor: with a foreign currency, the correct base amount is at
+        least this (lines are redrawn until it is).
+    pay_after_days: the payment of a paid target comes at least this many
+        days after the issue instant (room for a posting moved later).
     """
 
     currency: str
@@ -87,10 +100,20 @@ class ReserveSpec:
     customer: str = "own"
     guard: bool = False
     needs_po_ref: bool = True
+    bound: str = "any"
+    rate_shift: bool = False
+    end_day: int | None = None
+    min_base_minor: int = 0
+    pay_after_days: int = 0
 
     def __post_init__(self) -> None:
+        inside = self.timing == "near_end_inside" and self.end_day in (None, -1, 0)
+        outside = self.timing == "near_end_outside" and self.end_day in (None, 1, 2)
         if self.paid not in PAID or self.timing not in TIMINGS or self.customer not in CUSTOMERS \
-                or (self.guard and self.paid == "none"):
+                or (self.guard and self.paid == "none") or self.bound not in BOUNDS \
+                or ((self.rate_shift or self.bound != "any") and self.timing != "midnight_offset") \
+                or (self.end_day is not None and not (inside or outside)) \
+                or self.min_base_minor < 0 or self.pay_after_days < 0:
             raise ValueError(f"bad ReserveSpec {self!r}")
 
 

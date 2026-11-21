@@ -1,0 +1,10 @@
+{
+  "config_version": "1",
+  "n_ledger_rows": 300,
+  "n_documents": 40,
+  "base_currency": "KWD",
+  "currencies": ["KWD", "USD"],
+  "timezone": "America/Lima",
+  "scenarios": {"S1": 1},
+  "distractors": {"boundary": 5, "overpayment": 1}
+}

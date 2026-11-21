@@ -81,6 +81,20 @@ class WorldConfig:
     def foreign_currencies(self) -> tuple[str, ...]:
         return tuple(code for code in self.currencies if code != self.base_currency)
 
+    @property
+    def generator_config(self) -> dict[str, Any]:
+        """What shapes the books: `normalized` without `config_version` (a constant) and `time_limit_s`
+        (the environment's), with "no errors of this kind" in one form. Two configs that mean the
+        same thing have the same generator config. A bare positive number ("generator picks the
+        variants") stays distinct from an explicit split.
+        """
+        errors = {}
+        for kind, value in self.normalized["errors"].items():
+            variants = ERROR_VARIANTS[kind]
+            errors[kind] = {v: 0 for v in variants} if variants and value == 0 else value
+        shaping = {k: v for k, v in self.normalized.items() if k not in ("config_version", "time_limit_s")}
+        return {**shaping, "errors": errors}
+
 
 def _is_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)

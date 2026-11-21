@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from cookedbooks.world.fx import EXPONENTS
+from cookedbooks.world.fx import EXPONENTS, FX_MIN_MINOR, FX_MIN_RELATIVE
 from cookedbooks.world.ids import assign_ids
 from cookedbooks.world.inject.base import InjectionOutcome, InjectionRequest, IssueDraft, Ref
 from cookedbooks.world.inject.recorder import Change
@@ -223,7 +223,7 @@ def export_episode(world: World, injections: list[AppliedInjection], meta: Episo
         "cutoff_basis": "issued_at_local",
         "allocation_rule": "open_invoices_first",
         "duplicate_key": ["entity_id", "po_ref", "service_period", "currency", "total_minor"],
-        "fx_materiality": {"min_relative": "0.005", "min_minor": 100},
+        "fx_materiality": {"min_relative": str(FX_MIN_RELATIVE), "min_minor": FX_MIN_MINOR},
         "amount_tolerance_minor": {
             "duplicate_invoice": 0, "unallocated_payment": 0, "fx_error": 0, "cutoff_error": 0,
         },

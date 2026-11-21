@@ -38,6 +38,35 @@ DESCRIPTIONS = {
 }
 
 
+def rewrite_payment(ctx: ApplyContext, payment: Payment, variant: str) -> tuple[Payment, int]:
+    """Turn a clean fully allocated payment into a missing or partial one; returns (payment, remainder)."""
+    world, recorder = ctx.world, ctx.recorder
+    ar_rows = [r for r in world.payment_rows(payment.ref) if r.account == "AR"]
+    if len(ar_rows) != 1 or ar_rows[0].credit_minor != payment.amount_minor:
+        raise AssertionError("a reserved payment is one Cr AR row on its full amount")
+    ar = ar_rows[0]
+    if variant == "missing":
+        payment = recorder.update("payments", payment.ref, invoice_refs=None)
+        recorder.update("ledger", ar.ref, account="CUSTOMER_ADVANCES", invoice=None)
+        return payment, payment.amount_minor
+    rest = advance_part(ctx.rng, payment.amount_minor)
+    recorder.update("ledger", ar.ref, credit_minor=payment.amount_minor - rest)
+    recorder.add("ledger", LedgerRow(
+        ref=world.new_ref("L"), posting=ar.posting, ts_utc=ar.ts_utc, ts_offset=ar.ts_offset,
+        account="CUSTOMER_ADVANCES", debit_minor=0, credit_minor=rest, currency=ar.currency,
+        customer=ar.customer, invoice=None, payment=payment.ref,
+    ))
+    return payment, rest
+
+
+def unallocated_issue(payment: Payment, invoice_ref: str, remainder: int) -> tuple[IssueDraft, dict]:
+    """The truth issue and the C4 effect of a payment remainder left beside its open invoice."""
+    pair: list[Ref] = [("payment", payment.ref), ("invoice", invoice_ref)]
+    issue = IssueDraft(type=KIND, affected=list(pair), expected_amount_minor=remainder,
+                       currency=payment.currency, evidence_sets=[list(pair)])
+    return issue, {"control": "C4", "currency": payment.currency, "delta_minor": remainder}
+
+
 class _UnallocatedPayment:
     """Shared logic; subclasses fix the variant."""
 
@@ -58,35 +87,9 @@ class _UnallocatedPayment:
 
     def apply(self, ctx: ApplyContext) -> InjectionOutcome:
         target = ctx.targets[0]
-        payment, remainder = self._rewrite_payment(ctx, ctx.world.payments[target.payment])
-        pair: list[Ref] = [("payment", payment.ref), ("invoice", target.invoice)]
-        issue = IssueDraft(type=KIND, affected=list(pair), expected_amount_minor=remainder,
-                           currency=payment.currency, evidence_sets=[list(pair)])
-        return InjectionOutcome(
-            issues=[issue],
-            effects=[{"control": "C4", "currency": payment.currency, "delta_minor": remainder}],
-            description=DESCRIPTIONS[self.variant], kind=KIND,
-        )
-
-    def _rewrite_payment(self, ctx: ApplyContext, payment: Payment) -> tuple[Payment, int]:
-        """Turn a clean fully allocated payment into a missing or partial one; returns (payment, remainder)."""
-        world, recorder = ctx.world, ctx.recorder
-        ar_rows = [r for r in world.payment_rows(payment.ref) if r.account == "AR"]
-        if len(ar_rows) != 1 or ar_rows[0].credit_minor != payment.amount_minor:
-            raise AssertionError("a reserved payment is one Cr AR row on its full amount")
-        ar = ar_rows[0]
-        if self.variant == "missing":
-            payment = recorder.update("payments", payment.ref, invoice_refs=None)
-            recorder.update("ledger", ar.ref, account="CUSTOMER_ADVANCES", invoice=None)
-            return payment, payment.amount_minor
-        rest = advance_part(ctx.rng, payment.amount_minor)
-        recorder.update("ledger", ar.ref, credit_minor=payment.amount_minor - rest)
-        recorder.add("ledger", LedgerRow(
-            ref=world.new_ref("L"), posting=ar.posting, ts_utc=ar.ts_utc, ts_offset=ar.ts_offset,
-            account="CUSTOMER_ADVANCES", debit_minor=0, credit_minor=rest, currency=ar.currency,
-            customer=ar.customer, invoice=None, payment=payment.ref,
-        ))
-        return payment, rest
+        payment, remainder = rewrite_payment(ctx, ctx.world.payments[target.payment], self.variant)
+        issue, effect = unallocated_issue(payment, target.invoice, remainder)
+        return InjectionOutcome(issues=[issue], effects=[effect], description=DESCRIPTIONS[self.variant], kind=KIND)
 
 
 @register(KIND, "missing")

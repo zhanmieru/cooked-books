@@ -19,4 +19,6 @@ __all__ = [
 ]
 
 # Production injectors: importing a module registers it (see registry.register).
-from cookedbooks.world.inject import duplicate_invoice, unallocated_payment  # noqa: E402,F401
+from cookedbooks.world.inject import (  # noqa: E402,F401
+    cutoff_error, duplicate_invoice, fx_error, scenarios, unallocated_payment,
+)

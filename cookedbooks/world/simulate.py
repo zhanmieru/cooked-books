@@ -26,13 +26,13 @@ from cookedbooks.world.config import WorldConfig
 from cookedbooks.world.factory import (
     Budget, BudgetError, issue_invoice, new_po_ref, pay_in_full, posting_time_of, receive_payment, unique_lines,
 )
-from cookedbooks.world.fx import EXPONENTS, LOOKBACK_DAYS, build_fx
+from cookedbooks.world.fx import EXPONENTS, LOOKBACK_DAYS, build_fx, convert
 from cookedbooks.world.inject.base import InjectionPlan, ReserveSpec
-from cookedbooks.world.model import Invoice, Payment, ReservedTarget, World
+from cookedbooks.world.model import Invoice, LineItem, Payment, ReservedTarget, World
 from cookedbooks.world.postings import background_posting
-from cookedbooks.world.rng import chance, stream, weighted_index
-from cookedbooks.world.timeline import Timeline
-from cookedbooks.world.timeutil import HOUR, days
+from cookedbooks.world.rng import chance, config_salt, stream, weighted_index
+from cookedbooks.world.timeline import NEAR_MAX_DISTANCE, Timeline
+from cookedbooks.world.timeutil import DAY, HOUR, days
 
 _REGULAR_PAID_PERCENT = 40  # share of regular documents that are payments (each pays one invoice)
 _REGULAR_FOREIGN_PERCENT = 40
@@ -93,8 +93,10 @@ class Customers:
 
 def simulate(config: WorldConfig, seed: int, attempt: int, plans: list[InjectionPlan]) -> World:
     """The clean world; `plans` give the footprint to leave free and the targets to build."""
+    salt = config_salt(config.generator_config)
+
     def rng_for(label: str) -> random.Random:
-        return stream(seed, attempt, label)
+        return stream(seed, attempt, f"{salt}:{label}")
 
     timeline = Timeline(config.period_first, config.period_last, config.utc_offset)
     foreign = config.foreign_currencies
@@ -121,7 +123,8 @@ def simulate(config: WorldConfig, seed: int, attempt: int, plans: list[Injection
         world.reserved[index] = tuple(_build_reserved(world, rng, budget, spec, config, customers)
                                       for spec in plan.reserve)
 
-    subtypes = [s for s in dz.BOUNDARY_SUBTYPES if foreign or s != "weekend_rate"]
+    subtypes = [s for s in dz.BOUNDARY_SUBTYPES
+                if (foreign or s != "weekend_rate") and (timeline.offset != 0 or s != "date_line")]
     rng_for("distractor:boundary:subtypes").shuffle(subtypes)
     for kind in _DISTRACTOR_ORDER:
         for i in range(config.distractors[kind]):
@@ -157,32 +160,32 @@ def _build_reserved(world: World, rng: random.Random, budget: Budget, spec: Rese
     if spec.timing == "regular":  # the full regular range, as ordinary invoices
         issued = tl.regular_invoice_time(rng)
         posting = tl.regular_posting_time(rng, issued)
+    elif spec.timing == "weekend":  # like the weekend look-alike: regular posting delay
+        issued = tl.time_on(rng, tl.weekend_dates)
+        posting = tl.regular_posting_time(rng, issued)
     else:
         if spec.timing == "midnight_offset":
-            day = rng.choice([tl.last, tl.last + timedelta(days=1), tl.first - timedelta(days=1), tl.first])
-            written = tl.alternative_offset(rng)
-            issued = tl.midnight_time(rng, day, written)
-        elif spec.timing == "weekend":
-            issued = tl.time_on(rng, tl.weekend_dates)
-        elif spec.timing == "near_end_inside":
-            issued = tl.time_on(rng, [tl.last - timedelta(days=1), tl.last])
-        else:  # near_end_outside
-            issued = tl.time_on(rng, [tl.last + timedelta(days=1), tl.last + timedelta(days=2)])
+            issued, written = _midnight_target(world, rng, spec)
+        else:
+            near = [-1, 0] if spec.timing == "near_end_inside" else [1, 2]
+            offsets = near if spec.end_day is None else [spec.end_day]
+            issued = tl.time_on(rng, [tl.last + timedelta(days=d) for d in offsets])
         posting = issued
     if written is None:
         written = tl.written_offset(rng, issued)
     invoice = issue_invoice(world, rng, budget, customer=customer, currency=spec.currency, issued=issued,
                             written_offset=written, posting_ts=posting,
-                            lines=unique_lines(world, rng, customer, spec.currency),
+                            lines=_target_lines(world, rng, spec, customer, issued),
                             po_ref=new_po_ref(world, rng, allow_null=not spec.needs_po_ref))
     payments: list[Payment] = []
+    not_before = issued + spec.pay_after_days * DAY
     if spec.paid == "full":
-        payment = pay_in_full(world, rng, budget, invoice)
+        payment = pay_in_full(world, rng, budget, invoice, not_before=not_before)
         if payment is None:
             raise AssertionError("no room in the window for a reserved payment")
         payments.append(payment)
     elif spec.paid == "split":
-        payments.extend(_pay_in_two(world, rng, budget, invoice))
+        payments.extend(_pay_in_two(world, rng, budget, invoice, not_before=not_before))
     if spec.guard:
         customers.guard(customer, spec.currency, payments[-1].ts_utc)
     else:
@@ -192,11 +195,68 @@ def _build_reserved(world: World, rng: random.Random, budget: Budget, spec: Rese
                           payments=tuple(p.ref for p in payments))
 
 
-def _pay_in_two(world: World, rng: random.Random, budget: Budget, invoice: Invoice) -> list[Payment]:
+_LINE_TRIES = 200
+
+
+def _target_lines(world: World, rng: random.Random, spec: ReserveSpec, customer: str,
+                  issued: int) -> tuple[LineItem, ...]:
+    """Unique line items; for a foreign target with `min_base_minor`, redrawn until big enough."""
+    for _ in range(_LINE_TRIES):
+        lines = unique_lines(world, rng, customer, spec.currency)
+        if spec.min_base_minor == 0 or spec.currency == world.base_currency:
+            return lines
+        _, rate = world.fx.rate_on_or_before(world.timeline.local_date(issued), spec.currency,
+                                             world.base_currency)
+        total = sum(item.amount_minor for item in lines)
+        if convert(total, rate, spec.currency, world.base_currency, world.rounding) >= spec.min_base_minor:
+            return lines
+    raise AssertionError(f"no invoice of at least {spec.min_base_minor} base minor units in {_LINE_TRIES} draws")
+
+
+def _midnight_target(world: World, rng: random.Random, spec: ReserveSpec) -> tuple[int, int]:
+    """(issue instant, written offset) of a "midnight_offset" target (see ReserveSpec).
+
+    Local day near the bound(s), written on another clock so the written calendar
+    date is the day before or after. With `rate_shift`, only days whose written
+    date resolves to another fx row than the local date; if none of the days next
+    to the bound qualify, the days within NEAR_MAX_DISTANCE of it are used.
+    """
+    tl = world.timeline
+    one = timedelta(days=1)
+    if spec.bound == "mid":
+        near = list(tl.regular_dates)
+    else:
+        near = [tl.last, tl.last + one] + ([] if spec.bound == "end" else [tl.first - one, tl.first])
+    if not spec.rate_shift:
+        day = rng.choice(near)
+        written = tl.alternative_offset(rng)
+        return tl.midnight_time(rng, day, written), written
+    clocks = [0] if tl.offset != 0 else [360, -300]
+
+    def shifts(day, written: int) -> bool:
+        written_day = day + one if written > tl.offset else day - one
+        rate_day = world.fx.rate_on_or_before(day, spec.currency, world.base_currency)[0]
+        return world.fx.rate_on_or_before(written_day, spec.currency, world.base_currency)[0] != rate_day
+
+    candidates = [(d, w) for d in near for w in clocks if shifts(d, w)]
+    if not candidates and spec.bound != "mid":
+        span = NEAR_MAX_DISTANCE * one
+        wider = days(tl.last - span, tl.last + span + one)
+        if spec.bound == "any":
+            wider += days(tl.first - span - one, tl.first + span)
+        candidates = [(d, w) for d in wider for w in clocks if shifts(d, w)]
+    if not candidates:
+        raise AssertionError("no day near the bound where the written date changes the fx row")
+    day, written = rng.choice(candidates)
+    return tl.midnight_time(rng, day, written), written
+
+
+def _pay_in_two(world: World, rng: random.Random, budget: Budget, invoice: Invoice, *,
+                not_before: int = 0) -> list[Payment]:
     """Two payments, each allocated in full, together the invoice total (as the split_payment look-alike)."""
     tl = world.timeline
     first_part = invoice.total_minor * rng.randint(30, 70) // 100 or 1
-    after = max(invoice.issued_utc, posting_time_of(world, invoice))
+    after = max(invoice.issued_utc, posting_time_of(world, invoice), not_before)
     t1 = tl.payment_time(rng, after, max_days=_SPLIT_GAP_DAYS, before=tl.window_end_utc - HOUR + 1)
     if t1 is None:
         raise AssertionError("no room in the window for a reserved split payment")

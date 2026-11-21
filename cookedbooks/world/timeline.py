@@ -8,7 +8,10 @@ Regular invoices (everything that is not a `boundary` distractor or an
 injection target that asks for a near-bound time) are issued on weekdays at
 local business hours, at boundary distance >= 3, written either with the
 company offset or in UTC when the UTC date equals the local date. Their
-posting comes 0-2 days later, so it never crosses a bound.
+posting is the issue instant, 1-2 local days later, or now and then 1-2 local
+days earlier (a posting prepared just before the document is dated), always
+at business hours; at distance >= 3 it never crosses a bound. A cutoff_error
+moves a posting by one of these same delays across the period end.
 """
 
 from __future__ import annotations
@@ -25,7 +28,9 @@ NEAR_MAX_DISTANCE = 2
 BUSINESS_START = 8 * HOUR
 BUSINESS_END = 20 * HOUR  # exclusive
 LAST_REGULAR_AFTER_END = 8  # regular invoices are issued at most E+8, so a 2-day delay stays in the window
-_DELAY_WEIGHTS = [60, 25, 15]  # posting 0, 1, 2 days after issue
+# Posting delay in local days -> weight. Negative: posted before the document date.
+POSTING_DELAY_WEIGHTS: dict[int, int] = {-2: 4, -1: 10, 0: 50, 1: 22, 2: 14}
+_DELAYS = sorted(POSTING_DELAY_WEIGHTS)
 _UTC_WRITTEN_PERCENT = 15
 
 
@@ -83,12 +88,22 @@ class Timeline:
         return self.time_on(rng, dates)
 
     def regular_posting_time(self, rng: random.Random, issued: int) -> int:
-        """Posting of a regular invoice: same instant, or 1-2 local days later at business hours."""
-        delay = weighted_index(rng, _DELAY_WEIGHTS)
+        """Posting of a regular invoice: a delay drawn from POSTING_DELAY_WEIGHTS (see posting_at).
+
+        A negative delay that would leave the export window is replaced by 0.
+        """
+        delay = _DELAYS[weighted_index(rng, [POSTING_DELAY_WEIGHTS[d] for d in _DELAYS])]
+        if delay < 0 and self.local_date(issued) + timedelta(days=delay) < self.window_first:
+            delay = 0
+        return self.posting_at(rng, issued, delay)
+
+    def posting_at(self, rng: random.Random, issued: int, delay: int) -> int:
+        """A posting `delay` local days from `issued`: the issue instant for 0, else business hours
+        on that day (strictly after `issued` for a positive delay, before it for a negative one)."""
         if delay == 0:
             return issued
-        later = self.at(self.local_date(issued) + timedelta(days=delay), self.business_second(rng))
-        return max(later, issued + 60)
+        moved = self.at(self.local_date(issued) + timedelta(days=delay), self.business_second(rng))
+        return max(moved, issued + 60) if delay > 0 else min(moved, issued - 60)
 
     def payment_time(self, rng: random.Random, after: int, *, max_days: int = 35,
                      before: int | None = None) -> int | None:
