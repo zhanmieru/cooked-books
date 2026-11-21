@@ -119,14 +119,43 @@ def test_id_counts_only_when_all_its_tests_pass():
     cases += [("C15", "failed"), ("C20", "skipped")]
     cases += [("R%02d" % n, PASSED) for n in range(1, 20)]  # R20 has no test
     cases += [("M%02d" % n, PASSED) for n in range(1, 13)]
+    cases += [("D%02d" % n, PASSED) for n in range(1, 20)]  # D20 has no test
+    cases += [("D07", PASSED), ("D07", "failed")]  # one of D07's two tests fails
     r = Results(exit_code=1, cases=cases)
     block1, block2, block3, block4 = [b(r) for b in BLOCKS]
     assert block1.rows[0].value == "18/20"
     assert block1.rows[0].problems == ["C15 (failed)", "C20 (skipped)"]
+    assert block2.rows[0].label == "D01-D20" and block2.rows[0].value == "18/20"
+    assert block2.rows[0].problems == ["D07 (failed)", "D20 (no test)"]
     assert block3.rows[0].value == "19/20"
     assert block3.rows[0].problems == ["R20 (no test)"]
     assert block3.rows[1].value == "12/12"
-    assert block2.rows[0].value == block4.rows[0].value == "not implemented yet"
+    assert block4.rows[0].value == "not implemented yet"
+
+
+def test_report_prints_generation_stats_when_recorded():
+    r = Results(exit_code=0, cases=[("C01", PASSED)])
+    assert "Generator attempts" not in render(r)
+    r.generation = {"episodes": 40, "failed_episodes": 0, "attempts": 42, "rejected": 2,
+                    "codes": {"truth_mismatch": 2, "anomaly": 1}}
+    assert ("Generator attempts rejected by the verifier: 2 of 42 (40 episodes accepted). "
+            "Codes: anomaly x1, truth_mismatch x2.") in render(r)
+
+
+def test_stats_plugin_writes_pipeline_stats(tmp_path, monkeypatch):
+    import cookedbooks.verify as verify
+    from cookedbooks import pipeline
+
+    stats = pipeline.GenerationStats()
+    stats.record_attempt(("x",))
+    stats.record_attempt(None)
+    stats.episodes = 1
+    monkeypatch.setattr(pipeline, "STATS", stats)
+    target = tmp_path / "stats.json"
+    monkeypatch.setenv(verify.STATS_ENV, str(target))
+    verify.pytest_sessionfinish(None, 0)
+    assert verify.read_generation(target) == stats.to_dict()
+    assert verify.read_generation(tmp_path / "missing.json") is None
 
 
 def test_report_is_stable_without_duration():

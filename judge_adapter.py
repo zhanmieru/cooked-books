@@ -10,14 +10,16 @@ def generate_episode(seed: int, config: dict, output_dir: str) -> None:
     `config` is the team_config; a reset-style wrapper {"team_config": {...}, ...}
     is unwrapped (EVALUATION_CONTRACT.md, section 1).
     """
-    from cookedbooks.world.generate import generate_episode as _generate_episode
+    from cookedbooks.pipeline import generate_verified
 
     team_config = {} if config is None else config
     if isinstance(team_config, dict) and "team_config" in team_config:
         team_config = team_config["team_config"]
         if team_config is None:
             team_config = {}
-    _generate_episode(seed, team_config, output_dir)
+    # Generator attempts are checked by the independent verifier; a rejected
+    # attempt is regenerated (DESIGN.md section 7).
+    generate_verified(seed, team_config, output_dir)
 
 
 def make_env():

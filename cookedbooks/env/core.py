@@ -127,11 +127,12 @@ class AuditEnv:
 
     def _generate(self, seed: Any, team_config: dict) -> str:
         try:
-            from cookedbooks.world.generate import generate_episode
+            import cookedbooks.world.generate  # noqa: F401  (availability check)
+            from cookedbooks.pipeline import generate_verified
         except ImportError:
             raise RuntimeError("the episode generator (cookedbooks.world.generate) is not available") from None
         self._temp_dir = tempfile.mkdtemp(prefix="cookedbooks-episode-")
-        generate_episode(seed, copy.deepcopy(team_config), self._temp_dir)
+        generate_verified(seed, copy.deepcopy(team_config), self._temp_dir)
         return self._temp_dir
 
     def _remove_temp_dir(self) -> None:

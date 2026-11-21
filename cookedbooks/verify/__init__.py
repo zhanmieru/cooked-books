@@ -9,8 +9,15 @@ as passed only when it has at least one test and all of its tests passed.
 The summary is printed and written to `reports/verify_report.md`. Nothing in
 the report depends on the clock except the duration line.
 
-To add a jury block, write one function that takes `Results` and returns a
-`Block`, and append it to `BLOCKS`.
+The jury blocks are data: `BLOCK_SPECS` lists each block's rows as
+(label, ID prefix, count). A block whose tests do not exist yet has only a
+label (a string) and shows "not implemented yet"; switching it on is a
+one-line change.
+
+The pytest run also loads this module as a plugin (`-p cookedbooks.verify`):
+at the end of the session `pytest_sessionfinish` dumps
+`cookedbooks.pipeline.STATS` (generator attempts the verifier rejected) to the
+file named by $COOKEDBOOKS_STATS_FILE, and the report prints it.
 
 Standard library only, and kept importable on older Python 3 releases so
 that `make wheels-check` runs with whatever `python3` the host has.
@@ -18,6 +25,7 @@ that `make wheels-check` runs with whatever `python3` the host has.
 
 from __future__ import annotations
 
+import json
 import os
 import platform
 import re
@@ -28,11 +36,12 @@ import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_REPORT = REPO_ROOT / "reports" / "verify_report.md"
 REPORT_ENV = "COOKEDBOOKS_REPORT"
+STATS_ENV = "COOKEDBOOKS_STATS_FILE"
 
 # `test_C07_get_record_r1`, `test_R12[case]`, `test_M03` -> ("C", "07").
 _TEST_ID = re.compile(r"^test_([A-Z])(\d{2})(?=_|\[|$)")
@@ -53,6 +62,8 @@ class Results:
     exit_code: int
     # One entry per test case: (test id like "C07" or None, outcome).
     cases: List[Tuple[Optional[str], str]] = field(default_factory=list)
+    # `cookedbooks.pipeline.STATS.to_dict()` of the run, when it was recorded.
+    generation: Optional[Dict[str, Any]] = None
 
     def count(self, outcome: str) -> int:
         return sum(1 for _, o in self.cases if o == outcome)
@@ -99,6 +110,7 @@ def run_pytest(pytest_args: Sequence[str]) -> Results:
     """Run pytest in a subprocess from the repo root and collect results."""
     with tempfile.TemporaryDirectory(prefix="cookedbooks-verify-") as tmp:
         junit = Path(tmp) / "junit.xml"
+        stats = Path(tmp) / "generation.json"
         cmd = [
             sys.executable,
             "-m",
@@ -106,14 +118,41 @@ def run_pytest(pytest_args: Sequence[str]) -> Results:
             "-q",
             "-p",
             "no:cacheprovider",
+            "-p",
+            "cookedbooks.verify",
             "--junitxml",
             str(junit),
             *pytest_args,
         ]
-        proc = subprocess.run(cmd, cwd=str(REPO_ROOT))
+        env = dict(os.environ)
+        env[STATS_ENV] = str(stats)
+        proc = subprocess.run(cmd, cwd=str(REPO_ROOT), env=env)
         if not junit.is_file():
             return Results(exit_code=proc.returncode or 1)
-        return parse_junit(junit.read_text(encoding="utf-8"), proc.returncode)
+        results = parse_junit(junit.read_text(encoding="utf-8"), proc.returncode)
+        results.generation = read_generation(stats)
+        return results
+
+
+def read_generation(path: Path) -> Optional[Dict[str, Any]]:
+    """The generation statistics the plugin wrote, or None if there are none."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def pytest_sessionfinish(session: Any, exitstatus: Any) -> None:
+    """Pytest hook (this module is loaded with `-p cookedbooks.verify`): dump pipeline.STATS.
+
+    Writes only when $COOKEDBOOKS_STATS_FILE is set and the pipeline was used.
+    """
+    path = os.environ.get(STATS_ENV)
+    pipeline = sys.modules.get("cookedbooks.pipeline")
+    if not path or pipeline is None:
+        return
+    Path(path).write_text(json.dumps(pipeline.STATS.to_dict(), sort_keys=True), encoding="utf-8")
 
 
 # --------------------------------------------------------------------------
@@ -154,34 +193,29 @@ def id_row(results: Results, label: str, prefix: str, count: int) -> Row:
     return Row(label, "%d/%d" % (passed, count), problems)
 
 
-def not_implemented(number: int, title: str, label: str) -> Block:
-    return Block(number, title, [Row(label, "not implemented yet")])
+# (number, title, rows): each row is (label, test ID prefix, count of IDs).
+# rows = a label string: the block's tests are not written yet ("not implemented yet").
+BLOCK_SPECS: List[Tuple[int, str, Any]] = [
+    (1, "Contract and isolation", [("C01-C20", "C", 20)]),
+    (2, "Data and ground truth", [("D01-D20", "D", 20)]),
+    (3, "Matcher and reward", [("tests 1-20 (R01-R20)", "R", 20), ("examples M01-M12", "M", 12)]),
+    (4, "Reproducibility", "P01-P20"),  # -> [("P01-P20", "P", 20)] once tests/jury/test_block4_pairs.py exists
+]
 
 
-def block_1(results: Results) -> Block:
-    return Block(1, "Contract and isolation", [id_row(results, "C01-C20", "C", 20)])
+def make_block(number: int, title: str, rows: Any) -> Callable[[Results], Block]:
+    """A function `Results -> Block` for one entry of BLOCK_SPECS."""
+
+    def block(results: Results) -> Block:
+        if isinstance(rows, str):
+            return Block(number, title, [Row(rows, "not implemented yet")])
+        return Block(number, title, [id_row(results, label, prefix, count) for label, prefix, count in rows])
+
+    block.__name__ = "block_%d" % number
+    return block
 
 
-def block_2(results: Results) -> Block:
-    return not_implemented(2, "Data and ground truth", "D01-D20")
-
-
-def block_3(results: Results) -> Block:
-    return Block(
-        3,
-        "Matcher and reward",
-        [
-            id_row(results, "tests 1-20 (R01-R20)", "R", 20),
-            id_row(results, "examples M01-M12", "M", 12),
-        ],
-    )
-
-
-def block_4(results: Results) -> Block:
-    return not_implemented(4, "Reproducibility", "P01-P20")
-
-
-BLOCKS: List[Callable[[Results], Block]] = [block_1, block_2, block_3, block_4]
+BLOCKS: List[Callable[[Results], Block]] = [make_block(*spec) for spec in BLOCK_SPECS]
 
 
 # --------------------------------------------------------------------------
@@ -210,12 +244,27 @@ def render(results: Results, duration_s: Optional[float] = None) -> str:
             if row.problems:
                 problems.append("- Block %d, %s: %s" % (block.number, row.label, ", ".join(row.problems)))
     lines.append("")
+    if results.generation is not None:
+        lines += [generation_line(results.generation), ""]
     if problems:
         lines += ["Not passing:", ""] + problems + [""]
     lines.append("Verdict: %s" % ("PASS" if results.green else "FAIL"))
     if duration_s is not None:
         lines += ["", "Duration: %.1f s" % duration_s]
     return "\n".join(lines) + "\n"
+
+
+def generation_line(stats: Dict[str, Any]) -> str:
+    """'Generator attempts rejected by the verifier: k of n ...' from pipeline.STATS.to_dict()."""
+    line = "Generator attempts rejected by the verifier: %d of %d (%d episodes accepted" % (
+        stats.get("rejected", 0), stats.get("attempts", 0), stats.get("episodes", 0))
+    if stats.get("failed_episodes"):
+        line += ", %d ran out of attempts" % stats["failed_episodes"]
+    line += ")."
+    codes = stats.get("codes") or {}
+    if codes:
+        line += " Codes: " + ", ".join("%s x%d" % (code, codes[code]) for code in sorted(codes)) + "."
+    return line
 
 
 def write_report(text: str, path: Path) -> Path:

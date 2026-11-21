@@ -140,7 +140,7 @@ def fake_generator(monkeypatch):
     package = types.ModuleType("cookedbooks.world")
     module = types.ModuleType("cookedbooks.world.generate")
 
-    def generate_episode(seed, team_config, output_dir):
+    def generate_episode(seed, team_config, output_dir, *, attempt=0):
         calls.append((seed, team_config, output_dir))
         build_mini(output_dir)
 
@@ -148,6 +148,12 @@ def fake_generator(monkeypatch):
     package.generate = module
     monkeypatch.setitem(sys.modules, "cookedbooks.world", package)
     monkeypatch.setitem(sys.modules, "cookedbooks.world.generate", module)
+    # Train-mode generation goes through cookedbooks.pipeline, which runs the
+    # verifier on every attempt; the hand-built mini episode is not a generator
+    # output, so the verifier is faked to accept it.
+    from cookedbooks import pipeline
+    monkeypatch.setattr(pipeline, "verify_episode", lambda folder: types.SimpleNamespace(ok=True))
+    monkeypatch.setattr(pipeline, "STATS", pipeline.GenerationStats())
     return calls
 
 
