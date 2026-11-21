@@ -226,4 +226,6 @@ def score_episode(episode_dir: str, findings: dict, inspection_steps: int) -> di
 | 1–20, M01–M12 | `tests/jury/test_block3_reward.py` |
 | P01–P20 | `tests/jury/test_block4_pairs.py` + `cookedbooks/verify/transform.py` |
 
+В `test_block2_data.py` каждый тест `test_D01 … test_D20` берёт свой рецепт, генерирует эпизод на нескольких seed и проверяет шесть условий жюри через независимого проверяющего, а также то, что эпизод соответствует своему сценарию. Отсутствующий рецепт — это провал теста, а не пропуск. Больше seed: переменная `COOKEDBOOKS_D_SEEDS`. Там же `test_independent_knobs`: каждая ошибка, вид, сценарий и двойник включаются по отдельности и дают только себя.
+
 Что мы из этого меняем в коде — в [PLAN.md](../PLAN.md).
