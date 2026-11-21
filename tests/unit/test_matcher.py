@@ -10,6 +10,7 @@ import pytest
 from cookedbooks.grader.matcher import (
     UNMATCHED_REASONS,
     UnmatchedFinding,
+    can_share_finding,
     choose_pairs,
     fits,
     match,
@@ -258,3 +259,35 @@ def test_malformed_issue_fits_nothing_and_is_never_preferred():
     result = match([finding()], [bad], EXISTING, {})
     assert result.pairs == ()
     assert result.unmatched == (UnmatchedFinding(0, "issue_malformed", "0"),)
+
+
+# --- twin issues ------------------------------------------------------------
+
+
+def test_can_share_finding_each_condition():
+    a = issue("A", evidence_sets=(("7",),))
+    assert can_share_finding(a, issue("B", evidence_sets=(("kX",),)), EXISTING, {})
+    assert can_share_finding(a, issue("B", affected=("7", "7")), EXISTING, {})
+    assert not can_share_finding(a, issue("B", type_="fx_error"), EXISTING, {})
+    assert not can_share_finding(a, issue("B", affected=("7", "B7")), EXISTING, {})
+    assert not can_share_finding(a, issue("B", currency="USD"), EXISTING, {})
+    assert not can_share_finding(a, issue("B", amount=10001), EXISTING, {})
+    # One claim within tau of both: |10000 - 10002| <= 2 * 1.
+    assert can_share_finding(a, issue("B", amount=10002), EXISTING, {"duplicate_invoice": 1})
+    assert not can_share_finding(a, issue("B", amount=10003), EXISTING, {"duplicate_invoice": 1})
+    # The union of one set from each must exist and fit in 10 evidence IDs.
+    assert not can_share_finding(a, issue("B", evidence_sets=(("U",),)), EXISTING, {})
+    many = tuple(f"m{k}" for k in range(10))
+    assert not can_share_finding(a, issue("B", evidence_sets=(many,)), EXISTING | set(many), {})
+    assert can_share_finding(a, issue("B", evidence_sets=(many, ("kX",))), EXISTING | set(many), {})
+    assert not can_share_finding(a, issue("B", evidence_sets=()), EXISTING, {})
+    assert not can_share_finding(a, dict(issue("B"), matchable=False), EXISTING, {})
+
+
+def test_can_share_finding_agrees_with_fits_on_the_witness():
+    a = issue("A", amount=10000, evidence_sets=(("7",),))
+    b = issue("B", amount=10002, evidence_sets=(("kX",),))
+    tolerances = {"duplicate_invoice": 1}
+    witness = finding(amount=10001, evidence=("7", "kX"))
+    assert can_share_finding(a, b, EXISTING, tolerances)
+    assert fits(witness, a, EXISTING, 1) and fits(witness, b, EXISTING, 1)

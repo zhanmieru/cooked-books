@@ -6,11 +6,14 @@ import copy
 import json
 import re
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
 import judge_adapter
+from cookedbooks.env.core import task_text
+from cookedbooks.episode.loader import load_public
 from cookedbooks.runner import trajectories
 from cookedbooks.runner.episodes import episodes
 
@@ -106,25 +109,147 @@ def test_replaying_the_actions_reproduces_every_record(runs, folders):
             assert replay == {k: record[k] for k in replay}, (policy, episode_id, record["step"])
 
 
-def _secrets(folder: Path) -> list[str]:
-    truth = json.loads((folder / "truth.json").read_text())
-    provenance = json.loads((folder / "provenance.json").read_text())
-    texts = [i["issue_id"] for i in truth["issues"]] + [i["description"] for i in provenance["injections"]]
-    texts += sorted({d["kind"] for d in provenance["distractors"]})
-    texts += ["truth", "provenance", "issue_id", "expected_amount_minor", "evidence_sets", "injections",
-              "distractors", "generator_version", "team_config"]
-    return texts
+# --- leak scan ------------------------------------------------------------------------------
+#
+# The task text is one constant string and the reset's `manifest` and `policy` are the public
+# files verbatim (both checked first), so none of them can carry anything about an episode
+# beyond the public files. Every observation, all of it, is scanned for the episode's
+# closed-only values: every string or number in truth.json / provenance.json that occurs
+# nowhere in the public files (issue IDs, descriptions, the seed, the generator version, values
+# from before an injected change, ...), and for paths. Generic vocabulary (type, variant,
+# scenario and look-alike names, field names of the closed files) may appear in the task text,
+# which explains the rules, and as the keys of the public policy (amount tolerances per type),
+# but nowhere else: in records, results or errors it could only have come from a closed file.
+
+ERROR_TYPES = ("duplicate_invoice", "unallocated_payment", "fx_error", "cutoff_error")
+VARIANTS = ("missing", "partial", "wrong_date", "wrong_pair", "late", "early")
+SCENARIOS = ("S1", "S2")
+LOOK_ALIKES = ("split_payment", "refund", "recurring_amount", "boundary", "advance", "overpayment")
+CLOSED_FIELDS = ("truth", "provenance", "issue_id", "issue_ids", "expected_amount_minor", "evidence_sets",
+                 "injections", "distractors", "generator_version", "team_config")
+GENERIC_VOCABULARY = ERROR_TYPES + VARIANTS + SCENARIOS + LOOK_ALIKES + CLOSED_FIELDS
+PATH_LIKE = re.compile(r"(?:/Users/|/home/|/tmp/|/private/|/var/|[A-Za-z]:\\\\|episodes/|\.jsonl?\b|\.csv\b)")
+MIN_SECRET_CHARS = 4      # shorter closed-only strings ("add", "C5") are schema words, not data
+MIN_SECRET_NUMBER = 10000  # smaller integers occur everywhere (step counts, limits, quantities)
+
+
+@dataclass(frozen=True)
+class Secrets:
+    strings: frozenset[str]
+    numbers: frozenset[int]
+
+
+def _leaves(value, strings: set, numbers: set, *, keys: bool) -> None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if keys:
+                strings.add(key)
+            _leaves(item, strings, numbers, keys=keys)
+    elif isinstance(value, list):
+        for item in value:
+            _leaves(item, strings, numbers, keys=keys)
+    elif isinstance(value, bool) or value is None:
+        return
+    elif isinstance(value, int):
+        numbers.add(value)
+    elif isinstance(value, str):
+        strings.add(value)
+
+
+def episode_secrets(folder: Path) -> Secrets:
+    """Values of truth.json and provenance.json that the public files never contain."""
+    public = load_public(folder)
+    public_strings: set = set()
+    public_numbers: set = set()
+    _leaves([public.manifest, public.policy, {t: list(r) for t, r in public.tables.items()}],
+            public_strings, public_numbers, keys=True)
+    closed_strings: set = set()
+    closed_numbers: set = set()
+    for name in ("truth.json", "provenance.json"):
+        _leaves(json.loads((folder / name).read_text()), closed_strings, closed_numbers, keys=False)
+    public_text = "\n".join(sorted(public_strings))  # a value inside a public string is public
+    strings = {x for x in closed_strings - public_strings
+               if len(x) >= MIN_SECRET_CHARS and x not in GENERIC_VOCABULARY and x not in public_text}
+    numbers = {n for n in closed_numbers - public_numbers if abs(n) >= MIN_SECRET_NUMBER}
+    return Secrets(frozenset(strings), frozenset(numbers))
+
+
+def leak_problems(observation: dict, secrets: Secrets) -> list[str]:
+    """Everything in `observation` that could only have come from the closed files or the judge."""
+    task = observation.get("task") if isinstance(observation.get("task"), str) else ""
+    rest = json.dumps({k: v for k, v in observation.items() if k != "task"}, ensure_ascii=False)
+    # Checked verbatim against the public files elsewhere; their keys name the four types.
+    data = json.dumps({k: v for k, v in observation.items() if k not in ("task", "manifest", "policy")},
+                      ensure_ascii=False)
+    problems = []
+    for where, text in (("task", task), ("observation", rest)):
+        problems += [f"{where}: closed value {x!r}" for x in sorted(secrets.strings) if x in text]
+        problems += [f"{where}: closed number {n}" for n in sorted(secrets.numbers)
+                     if re.search(r"(?<![0-9])%d(?![0-9])" % n, text)]
+        if PATH_LIKE.search(text):
+            problems.append(f"{where}: path")
+    problems += [f"observation: closed vocabulary {w!r}" for w in GENERIC_VOCABULARY
+                 if re.search(r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(w), data)]
+    return problems
+
+
+def test_task_text_is_one_constant_string(runs):
+    limits = {e.name: float(e.team_config.get("time_limit_s", 60)) for e in TRAIN}
+    assert set(limits.values()) == {60.0}
+    tasks = {records[0]["observation"]["task"] for records in runs.values()}
+    assert tasks == {task_text(60.0)}
+
+
+def test_reset_manifest_and_policy_are_the_public_files_verbatim(runs, folders):
+    for (_, episode_id), records in runs.items():
+        observation = records[0]["observation"]
+        for name in ("manifest", "policy"):
+            assert observation[name] == json.loads((folders[episode_id] / f"{name}.json").read_text())
 
 
 def test_observations_leak_no_truth_paths_or_seeds(runs, folders):
-    path_like = re.compile(r"(?:/Users/|/home/|/tmp/|/private/|/var/|[A-Za-z]:\\\\|episodes/|\.json\b|\.csv\b)")
-    seeds = [e.seed for e in TRAIN]
+    secrets = {episode_id: episode_secrets(folder) for episode_id, folder in folders.items()}
+    for episode_id, folder in folders.items():
+        seed = json.loads((folder / "provenance.json").read_text())["seed"]
+        assert seed in secrets[episode_id].numbers  # the scan really looks for the seed
+        assert all(i["issue_id"] in secrets[episode_id].strings
+                   for i in json.loads((folder / "truth.json").read_text())["issues"])
     for (policy, episode_id), records in runs.items():
-        secrets = _secrets(folders[episode_id])
         for record in records:
-            text = json.dumps(record["observation"], ensure_ascii=False)
-            for secret in secrets:
-                assert secret not in text, (policy, episode_id, record["step"], secret)
-            assert not path_like.search(text), (policy, episode_id, record["step"])
-            for seed in seeds:
-                assert not re.search(r"(?<![0-9])%d(?![0-9])" % seed, text), (policy, episode_id, seed)
+            assert leak_problems(record["observation"], secrets[episode_id]) == [], \
+                (policy, episode_id, record["step"])
+
+
+def test_leak_scan_flags_closed_data_outside_the_task_text(runs, folders):
+    """The scan bites: closed data planted in a real observation is flagged, the task text's words are not."""
+    entry = next(e for e in TRAIN if e.name == "train-03")  # two duplicates next to recurring amounts
+    folder = entry.folder()
+    episode_id = json.loads((folder / "manifest.json").read_text())["episode_id"]
+    truth = json.loads((folder / "truth.json").read_text())
+    provenance = json.loads((folder / "provenance.json").read_text())
+    secrets = episode_secrets(folder)
+    records = runs[("simple_recon", episode_id)]
+    reset, page = records[0]["observation"], records[1]["observation"]
+    assert leak_problems(reset, secrets) == [] and leak_problems(page, secrets) == []
+
+    def planted(change) -> dict:
+        observation = copy.deepcopy(page)
+        change(observation)
+        return observation
+
+    issue_id = truth["issues"][0]["issue_id"]
+    description = provenance["injections"][0]["description"]
+    kind = provenance["distractors"][0]["kind"]
+    cases = {
+        "issue id in a record": planted(lambda o: o["result"]["records"][0].update(note=issue_id)),
+        "description in an error": planted(lambda o: o.update(error={"code": "x", "message": description})),
+        "look-alike kind in a record": planted(lambda o: o["result"]["records"][0].update(kind=kind)),
+        "error type in a result": planted(lambda o: o.update(result={"type": "duplicate_invoice"})),
+        "seed in remaining_steps": planted(lambda o: o.update(remaining_steps=provenance["seed"])),
+        "path in a record": planted(lambda o: o["result"]["records"][0].update(src=str(folder))),
+    }
+    for label, observation in cases.items():
+        assert leak_problems(observation, secrets), label
+    # A closed value inside the task text is flagged too; generic words there are not.
+    assert leak_problems({**reset, "task": reset["task"] + " " + issue_id}, secrets)
+    assert leak_problems({**reset, "task": reset["task"] + " " + kind + " advance refund"}, secrets) == []

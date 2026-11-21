@@ -28,9 +28,11 @@ an issue that no such matching can cover stays unmatched.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from collections.abc import Mapping, Sequence
 from collections.abc import Set as AbstractSet
+from dataclasses import dataclass
+
+from cookedbooks.findings import MAX_EVIDENCE_IDS
 
 # Reasons for an unmatched finding, in the order the conditions are checked.
 CONDITION_REASONS = (
@@ -105,6 +107,34 @@ def mismatch_reason(
 def fits(finding: Mapping, issue: Mapping, existing_ids: AbstractSet[str], tolerance: int) -> bool:
     """True iff all five match conditions hold."""
     return mismatch_reason(finding, issue, existing_ids, tolerance) is None
+
+
+def can_share_finding(
+    a: Mapping, b: Mapping, existing_ids: AbstractSet[str], tolerances: Mapping[str, int]
+) -> bool:
+    """True iff some structurally valid finding fits both issues `a` and `b` ("twin" issues).
+
+    Exact condition: both matchable, same `type`, same `affected_ids` set, same
+    `currency`, `|expected_a - expected_b| <= 2 * tau` (one integer claim within
+    tau of both), and an evidence set of each whose union exists entirely and
+    has at most MAX_EVIDENCE_IDS IDs. With twins in truth, a repeated finding
+    can be a true positive (jury example M11).
+    """
+    if a.get("matchable", True) is False or b.get("matchable", True) is False:
+        return False
+    if a["type"] != b["type"] or a["currency"] != b["currency"]:
+        return False
+    if set(a["affected_ids"]) != set(b["affected_ids"]):
+        return False
+    tolerance = tolerances.get(a["type"], 0)
+    if abs(a["expected_amount_minor"] - b["expected_amount_minor"]) > 2 * tolerance:
+        return False
+    for set_a in a["evidence_sets"]:
+        for set_b in b["evidence_sets"]:
+            union = set(set_a) | set(set_b)
+            if len(union) <= MAX_EVIDENCE_IDS and union.issubset(existing_ids):
+                return True
+    return False
 
 
 def _matching_size(issues: Sequence[int], edges: Mapping[int, Sequence[int]], banned: AbstractSet[int]) -> int:

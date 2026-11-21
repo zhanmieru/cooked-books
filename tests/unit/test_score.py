@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import json
 import os
 import random
@@ -11,12 +12,13 @@ from fractions import Fraction
 from pathlib import Path
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 import judge_adapter
 from cookedbooks.findings import ERROR_TYPES
 from cookedbooks.grader import grader_log
+from cookedbooks.grader.matcher import can_share_finding, fits
 from cookedbooks.grader.oracle import ORACLE_EXPLANATION, oracle_findings, oracle_from_issues
 from cookedbooks.grader.reward import STEP_COST
 from cookedbooks.grader.score import resolve_tolerances, score_episode, score_findings
@@ -389,11 +391,18 @@ def test_log_has_no_timestamps(mini_episode, log_file):
 
 
 # --- Hypothesis properties ------------------------------------------------------
+#
+# Examples are fixed by the "cookedbooks" profile in tests/conftest.py; see there
+# for a random hunt. Generated truths often contain "twin" issues (two issues a
+# single finding can fit, see matcher.can_share_finding), because that is where
+# a repeated finding can legitimately be a true positive (jury example M11).
 
 POOL = ("7", "kX", "Kx", "5", "a", "a ", "0042")
 EXISTING = frozenset(POOL)
 CURRENCIES = ("KZT", "USD")
+TYPES = ERROR_TYPES[:2]
 id_lists = st.lists(st.sampled_from(POOL), min_size=1, max_size=3)
+tolerance_maps = st.fixed_dictionaries({}, optional={t: st.integers(0, 2) for t in TYPES})
 
 
 @st.composite
@@ -401,14 +410,24 @@ def truths(draw) -> list[dict]:
     n = draw(st.integers(min_value=0, max_value=4))
     ids = draw(st.lists(st.sampled_from(("A", "B", "b", "10", "9")), min_size=n, max_size=n,
                         unique=True))
-    return [{
-        "issue_id": issue_id,
-        "type": draw(st.sampled_from(ERROR_TYPES[:2])),
-        "affected_ids": draw(id_lists),
-        "expected_amount_minor": draw(st.integers(min_value=0, max_value=3)),
-        "currency": draw(st.sampled_from(CURRENCIES)),
-        "evidence_sets": draw(st.lists(id_lists, min_size=1, max_size=2)),
-    } for issue_id in ids]
+    issues: list[dict] = []
+    for issue_id in ids:
+        if issues and draw(st.integers(0, 3)) == 0:
+            # A twin candidate: an earlier issue with new evidence and a nearby amount.
+            issue = dict(draw(st.sampled_from(issues)), issue_id=issue_id)
+            issue["expected_amount_minor"] += draw(st.integers(-2, 2))
+            issue["evidence_sets"] = draw(st.lists(id_lists, min_size=1, max_size=2))
+        else:
+            issue = {
+                "issue_id": issue_id,
+                "type": draw(st.sampled_from(TYPES)),
+                "affected_ids": draw(id_lists),
+                "expected_amount_minor": draw(st.integers(min_value=0, max_value=3)),
+                "currency": draw(st.sampled_from(CURRENCIES)),
+                "evidence_sets": draw(st.lists(id_lists, min_size=1, max_size=2)),
+            }
+        issues.append(issue)
+    return issues
 
 
 @st.composite
@@ -425,11 +444,12 @@ def findings_for(draw, issues: list[dict]) -> list[dict]:
             elif field == "currency":
                 f["currency"] = draw(st.sampled_from(CURRENCIES))
             elif field == "evidence":
-                f["evidence_ids"] = f["evidence_ids"] + draw(st.lists(st.sampled_from(POOL + ("U",)), max_size=2))
+                f["evidence_ids"] = f["evidence_ids"] + draw(
+                    st.lists(st.sampled_from(POOL + ("U",)), max_size=2))
             elif field == "affected":
                 f["affected_ids"] = draw(id_lists)
         else:
-            f = {"type": draw(st.sampled_from(ERROR_TYPES[:2])), "affected_ids": draw(id_lists),
+            f = {"type": draw(st.sampled_from(TYPES)), "affected_ids": draw(id_lists),
                  "claimed_amount_minor": draw(st.integers(min_value=0, max_value=3)),
                  "currency": draw(st.sampled_from(CURRENCIES)),
                  "evidence_ids": draw(st.lists(st.sampled_from(POOL), max_size=4)),
@@ -441,9 +461,7 @@ def findings_for(draw, issues: list[dict]) -> list[dict]:
 @st.composite
 def cases(draw):
     issues = draw(truths())
-    return (issues, draw(findings_for(issues)),
-            draw(st.fixed_dictionaries({}, optional={"duplicate_invoice": st.integers(0, 2),
-                                                     "unallocated_payment": st.integers(0, 2)})),
+    return (issues, draw(findings_for(issues)), draw(tolerance_maps),
             draw(st.integers(min_value=0, max_value=120)))
 
 
@@ -457,7 +475,16 @@ def key(result: dict) -> tuple:
     return m["tp"], m["fp"], m["fn"], result["exact"].ret
 
 
-@settings(max_examples=200, deadline=None)
+def has_twins(issues: list[dict], tolerances: dict) -> bool:
+    return any(can_share_finding(a, b, EXISTING, tolerances)
+               for a, b in itertools.combinations(issues, 2))
+
+
+def fitted_issue_ids(f: dict, issues: list[dict], tolerances: dict) -> set[str]:
+    return {i["issue_id"] for i in issues
+            if fits(f, i, EXISTING, tolerances.get(i["type"], 0))}
+
+
 @given(cases(), st.randoms(use_true_random=False))
 def test_permuting_findings_changes_nothing(case, rnd: random.Random):
     issues, items, tolerances, steps = case
@@ -466,19 +493,42 @@ def test_permuting_findings_changes_nothing(case, rnd: random.Random):
     assert key(run(issues, items, tolerances, steps)) == key(run(issues, shuffled, tolerances, steps))
 
 
-@settings(max_examples=200, deadline=None)
 @given(cases(), st.data())
-def test_duplicate_finding_never_increases_return(case, data):
+def test_duplicate_finding_without_twin_issues_never_helps(case, data):
+    """(a) When no finding can fit two issues, a repeated finding is always a plain FP."""
     issues, items, tolerances, steps = case
-    if not items:
-        return
+    assume(items and not has_twins(issues, tolerances))
     extra = data.draw(st.sampled_from(items))
-    before = run(issues, items, tolerances, steps)["exact"].ret
-    after = run(issues, items + [dict(extra)], tolerances, steps)["exact"].ret
-    assert after <= before
+    before = run(issues, items, tolerances, steps)
+    after = run(issues, items + [dict(extra)], tolerances, steps)
+    assert after["metrics"]["tp"] == before["metrics"]["tp"]
+    assert after["exact"].ret <= before["exact"].ret
 
 
-@settings(max_examples=200, deadline=None)
+@given(cases(), st.data())
+def test_duplicate_finding_adds_at_most_one_tp(case, data):
+    """(b) Any truth: a repeated finding adds at most one TP. It adds one whenever an issue the
+    first matching left unmatched fits it, and it can add one only if it fits two issues
+    (the matching may re-route other findings, so the new TP need not be that unmatched issue).
+    """
+    issues, items, tolerances, steps = case
+    assume(items)
+    extra = data.draw(st.sampled_from(items))
+    before = run(issues, items, tolerances, steps)
+    after = run(issues, items + [dict(extra)], tolerances, steps)
+    gained = after["metrics"]["tp"] - before["metrics"]["tp"]
+    assert gained in (0, 1)
+    fitted = fitted_issue_ids(extra, issues, tolerances)
+    matched = {issue_id for issue_id, _ in before["pairs"]}
+    if fitted - matched:
+        assert gained == 1
+    if gained == 1:
+        assert len(fitted) >= 2
+        assert after["exact"].ret >= before["exact"].ret
+    else:
+        assert after["exact"].ret <= before["exact"].ret
+
+
 @given(cases(), st.data())
 def test_extra_finding_never_improves_oracle(case, data):
     issues, items, tolerances, steps = case
@@ -486,10 +536,10 @@ def test_extra_finding_never_improves_oracle(case, data):
     base = run(issues, oracle, tolerances, steps)["exact"].ret
     for extra in items[:3]:
         position = data.draw(st.integers(min_value=0, max_value=len(oracle)))
-        assert run(issues, oracle[:position] + [extra] + oracle[position:], tolerances, steps)["exact"].ret <= base
+        changed = oracle[:position] + [extra] + oracle[position:]
+        assert run(issues, changed, tolerances, steps)["exact"].ret <= base
 
 
-@settings(max_examples=200, deadline=None)
 @given(cases())
 def test_oracle_achieves_maximum_return(case):
     issues, items, tolerances, steps = case
@@ -500,7 +550,6 @@ def test_oracle_achieves_maximum_return(case):
     assert run(issues, items, tolerances, steps)["exact"].ret <= best["exact"].ret
 
 
-@settings(max_examples=200, deadline=None)
 @given(cases())
 def test_one_more_step_costs_exactly_0002_when_unclipped(case):
     issues, items, tolerances, steps = case
@@ -511,3 +560,59 @@ def test_one_more_step_costs_exactly_0002_when_unclipped(case):
         assert now.ret - later.ret == Fraction(2, 1000)
     else:
         assert later.ret <= now.ret
+
+
+# --- the twin cases, as fixed examples -------------------------------------------
+
+
+def twin(issue_id: str, evidence: list[str]) -> dict:
+    return {"issue_id": issue_id, "type": "fx_error", "affected_ids": ["7"],
+            "expected_amount_minor": 0, "currency": "KZT", "evidence_sets": [evidence]}
+
+
+def twin_finding(evidence: list[str]) -> dict:
+    return {"type": "fx_error", "affected_ids": ["7"], "claimed_amount_minor": 0,
+            "currency": "KZT", "evidence_ids": evidence, "explanation": ""}
+
+
+def test_duplicate_finding_is_a_tp_when_truth_has_indistinguishable_issues():
+    """Two issues no finding can tell apart need two identical findings; both are TPs.
+
+    This is the jury's M11 (F0 and F1 fit both A and B -> TP 2) with F1 = F0, and the
+    counterexample that disproved the old "a duplicate never raises the return" property.
+    """
+    issues = [twin("A", ["7"]), twin("B", ["7"])]
+    assert can_share_finding(issues[0], issues[1], EXISTING, {})
+    one = run(issues, [twin_finding(["7"])], {}, 0)
+    two = run(issues, [twin_finding(["7"])] * 2, {}, 0)
+    assert one["exact"].ret == Fraction(1, 3) and one["pairs"] == [["A", 0]]
+    assert two["exact"].ret == 1 and two["pairs"] == [["A", 0], ["B", 1]]
+
+
+def test_duplicate_can_gain_through_rerouting():
+    """The gained TP need not be an issue the duplicate itself fits from the old leftovers.
+
+    f fits A and B, g fits B and C. [f, g] matches A->f, B->g, C unmatched (f does not
+    fit C). Adding a copy of f gives A->f, B->copy, C->g: TP 3.
+    """
+    issues = [twin("A", ["7"]), twin("B", ["kX"]), twin("C", ["5"])]
+    existing_ids = {"7", "kX", "5"}
+    f, g = twin_finding(["7", "kX"]), twin_finding(["kX", "5"])
+    before = score_findings(issues=issues, existing_ids=existing_ids, tolerances={},
+                            findings={"episode_id": "e", "findings": [f, g]}, inspection_steps=0)
+    after = score_findings(issues=issues, existing_ids=existing_ids, tolerances={},
+                           findings={"episode_id": "e", "findings": [f, g, dict(f)]},
+                           inspection_steps=0)
+    assert before["pairs"] == [["A", 0], ["B", 1]]
+    assert after["pairs"] == [["A", 0], ["B", 2], ["C", 1]]
+    assert (before["exact"].ret, after["exact"].ret) == (Fraction(3, 5), 1)
+
+
+@pytest.mark.skipif(os.environ.get("COOKEDBOOKS_HYPOTHESIS_RANDOM") == "1", reason="random hunt")
+def test_hypothesis_profile_is_reproducible():
+    """tests/conftest.py loads a derandomized profile so every machine runs the same examples."""
+    current = settings.default
+    assert current.derandomize is True
+    assert current.database is None
+    assert current.deadline is None
+    assert current.print_blob is False
