@@ -34,6 +34,7 @@ make verify
 - `python -m cookedbooks.verify.attacks --seeds 5` runs the reward-attack catalogue on generated episodes.
 - `python -m cookedbooks.verify.transform SRC DST --permute --relabel --style int` makes a reordered, relabelled copy of an episode folder.
 - `python -m cookedbooks.runner.run --policy NAME --episode DIR --mode closed|train` runs one policy in a separate process. `make baselines` prints the policy table.
+- Property tests run a fixed set of examples so that `make verify` is reproducible. To hunt for new counterexamples run them randomly: `COOKEDBOOKS_HYPOTHESIS_RANDOM=1 COOKEDBOOKS_HYPOTHESIS_EXAMPLES=5000 .venv/bin/python -m pytest -q tests/unit/test_score.py`. A property that only holds under a precondition must state it.
 - `episodes/` and `trajectories.jsonl` are generated artefacts that are committed. After any change to the generator run `make episodes`; after any change to the environment output, the task text or a policy run `make trajectories`. Tests compare the committed files with a fresh build.
 
 ## Hard rules
